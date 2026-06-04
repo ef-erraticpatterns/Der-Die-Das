@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Knit Assistant" />
+  <meta name="theme-color" content="#2d1b4e" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Knit Assistant</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>🧶 Knit Assistant</h1>
+      <button id="add-project-btn" class="icon-btn" title="New project">＋</button>
+    </header>
+
+    <nav id="project-tabs" role="tablist"></nav>
+
+    <main id="project-view">
+      <div id="empty-state">
+        <p>No projects yet.<br/>Tap <strong>＋</strong> to create your first project.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: new/rename project -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal">
+      <h2 id="modal-title">New Project</h2>
+      <input id="modal-input" type="text" placeholder="Project name" maxlength="40" />
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn secondary">Cancel</button>
+        <button id="modal-confirm" class="btn primary">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: new step -->
+  <div id="step-modal-overlay" class="hidden">
+    <div id="step-modal">
+      <h2>Add Step</h2>
+      <input id="step-modal-input" type="text" placeholder="Step name, e.g. Increase rows" maxlength="60" />
+      <label class="counter-label">
+        Number of row counters
+        <select id="step-counter-count">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button id="step-modal-cancel" class="btn secondary">Cancel</button>
+        <button id="step-modal-confirm" class="btn primary">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // Try repo-root path for GitHub Pages
+        navigator.serviceWorker.register('./sw.js');
+      });
+    }
+  </script>
+</body>
+</html>
