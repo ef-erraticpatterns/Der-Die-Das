@@ -14,10 +14,15 @@ function save(state) {
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
 let state = load();
 let currentView = 'projects';
 let chatHistory = [];
 let isChatLoading = false;
+let isAnalyzing = false;
 
 function getProject(id) { return state.projects.find(p => p.id === id); }
 function activeProject() { return getProject(state.activeId); }
@@ -133,16 +138,88 @@ function updateStepTotal(stepId) {
 function handlePdfUpload(projectId, file) {
   if (!file || file.type !== 'application/pdf') { alert('Please select a PDF file.'); return; }
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     const p = getProject(projectId);
-    if (p) { p.pdfData = e.target.result; save(state); renderProject(); }
+    if (!p) return;
+    p.pdfData = e.target.result;
+    p.patternText = null;
+    p.patternAnalysis = null;
+    save(state);
+    renderProject();
+    const text = await extractPdfText(e.target.result);
+    const proj = getProject(projectId);
+    if (text && proj) { proj.patternText = text; save(state); renderProject(); }
   };
   reader.readAsDataURL(file);
 }
 
 function removePdf(projectId) {
   const p = getProject(projectId);
-  if (p) { p.pdfData = null; save(state); renderProject(); }
+  if (p) { p.pdfData = null; p.patternText = null; p.patternAnalysis = null; save(state); renderProject(); }
+}
+
+// ── Pattern recognition ───────────────────────────────────────────────────────
+async function extractPdfText(dataUrl) {
+  if (typeof pdfjsLib === 'undefined') return null;
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+    const maxPages = Math.min(pdf.numPages, 10);
+    let text = '';
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it => it.str).join(' ') + '\n\n';
+    }
+    return text.trim().slice(0, 8000) || null;
+  } catch { return null; }
+}
+
+async function analyzePattern(projectId) {
+  if (isAnalyzing) return;
+  const p = getProject(projectId);
+  if (!p?.patternText) return;
+  const key = localStorage.getItem('orApiKey');
+  if (!key) { alert('Set up your OpenRouter API key in the AI Chat tab first.'); switchView('chat'); return; }
+  isAnalyzing = true;
+  renderProject();
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://ef-erraticpatterns.github.io/Knit-Assistant',
+        'X-Title': 'Knit Assistant'
+      },
+      body: JSON.stringify({
+        model: localStorage.getItem('orModel') || 'mistralai/mistral-7b-instruct:free',
+        messages: [
+          { role: 'system', content: 'You are a knitting expert. Analyze knitting patterns concisely and practically.' },
+          { role: 'user', content: `Analyze this knitting pattern and give a brief structured summary with these sections:\n**Project**: what is being made\n**Materials**: yarn weight, needle size, yardage needed\n**Gauge**: stitches/rows per 4 inches if given\n**Key abbreviations**: any custom or important ones defined\n**Pattern sections**: main parts of the pattern in order\n**Notes**: important warnings or tips\n\nPattern text:\n${p.patternText.slice(0, 4000)}` }
+        ]
+      })
+    });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const proj = getProject(projectId);
+    if (proj) { proj.patternAnalysis = data.choices[0].message.content; save(state); }
+  } catch (e) {
+    alert(`Analysis failed: ${e.message}`);
+  } finally {
+    isAnalyzing = false;
+    renderProject();
+  }
+}
+
+function minMarkdown(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
 }
 
 // ── Glossary data ─────────────────────────────────────────────────────────────
@@ -292,7 +369,10 @@ function buildSystemPrompt() {
 Be concise and practical. When using jargon, explain it clearly.`;
   const p = activeProject();
   if (p && p.steps.length > 0) {
-    prompt += `\n\nThe user is currently working on a project called "${p.name}" with these steps: ${p.steps.map(s => `"${s.name}"`).join(', ')}.`;
+    prompt += `\n\nThe user is working on a project called "${p.name}" with these steps: ${p.steps.map(s => `"${s.name}"`).join(', ')}.`;
+  }
+  if (p?.patternText) {
+    prompt += `\n\nThe user has uploaded a knitting pattern. Here is the pattern text (may be truncated):\n\n${p.patternText.slice(0, 3000)}`;
   }
   return prompt;
 }
@@ -322,6 +402,23 @@ function renderChat() {
     empty.className = 'chat-empty';
     empty.textContent = 'Ask me anything about your pattern ✨';
     thread.appendChild(empty);
+    const proj = activeProject();
+    if (proj?.patternText) {
+      const chips = document.createElement('div');
+      chips.className = 'chat-chips';
+      ['Summarize this pattern', 'What abbreviations are used?', 'What materials do I need?', 'What skill level is this?'].forEach(q => {
+        const chip = document.createElement('button');
+        chip.className = 'chat-chip';
+        chip.textContent = q;
+        chip.addEventListener('click', () => {
+          const input = document.getElementById('chat-input');
+          input.value = q;
+          sendChatMessage();
+        });
+        chips.appendChild(chip);
+      });
+      thread.appendChild(chips);
+    }
   } else {
     chatHistory.forEach(msg => {
       const bubble = document.createElement('div');
@@ -452,6 +549,45 @@ function renderProject() {
     pdfSec.appendChild(uploadArea);
   }
   main.appendChild(pdfSec);
+
+  // Pattern analysis section
+  if (p.pdfData) {
+    const analysisSec = document.createElement('div');
+    analysisSec.className = 'pattern-analysis-section';
+    if (isAnalyzing) {
+      const ld = document.createElement('div');
+      ld.className = 'pattern-analysis-loading';
+      ld.innerHTML = '<span></span><span></span><span></span>';
+      const ldTxt = document.createElement('p');
+      ldTxt.textContent = 'Analyzing pattern…';
+      analysisSec.append(ld, ldTxt);
+    } else if (p.patternAnalysis) {
+      const hdr = document.createElement('div');
+      hdr.className = 'pattern-analysis-header';
+      const lbl = document.createElement('span');
+      lbl.textContent = '✨ Pattern Analysis';
+      const reBtn = document.createElement('button');
+      reBtn.className = 'btn small secondary';
+      reBtn.textContent = 'Re-analyze';
+      reBtn.addEventListener('click', () => {
+        if (confirm('Re-analyze this pattern? This uses your API credits.')) {
+          p.patternAnalysis = null; save(state); analyzePattern(p.id);
+        }
+      });
+      hdr.append(lbl, reBtn);
+      const body = document.createElement('div');
+      body.className = 'pattern-analysis-content';
+      body.innerHTML = minMarkdown(p.patternAnalysis);
+      analysisSec.append(hdr, body);
+    } else if (p.patternText) {
+      const btn = document.createElement('button');
+      btn.className = 'btn primary full-width';
+      btn.textContent = '✨ Analyze Pattern with AI';
+      btn.addEventListener('click', () => analyzePattern(p.id));
+      analysisSec.appendChild(btn);
+    }
+    if (analysisSec.children.length > 0) main.appendChild(analysisSec);
+  }
 
   // Steps section
   const stepsSec = document.createElement('div');
