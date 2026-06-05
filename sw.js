@@ -1,4 +1,4 @@
-const CACHE = 'knit-assistant-v1';
+const CACHE = 'knit-assistant-v2';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {

@@ -17,6 +17,7 @@
     <header>
       <h1>🧶 Knit Assistant</h1>
       <button id="add-project-btn" class="icon-btn" title="New project">＋</button>
+      <button id="chat-settings-btn" class="icon-btn secondary hidden" title="API key settings">⚙</button>
     </header>
 
     <nav id="project-tabs" role="tablist"></nav>
@@ -26,6 +27,53 @@
         <p>No projects yet.<br/>Tap <strong>＋</strong> to create your first project.</p>
       </div>
     </main>
+
+    <!-- Glossary view -->
+    <section id="glossary-view" class="hidden">
+      <div id="glossary-search-wrap">
+        <input id="glossary-search" type="search" placeholder="Search: k2tog, yarn over, cable…" autocomplete="off" />
+      </div>
+      <div id="glossary-results"></div>
+    </section>
+
+    <!-- Chat view -->
+    <section id="chat-view" class="hidden">
+      <!-- API key setup (shown when no key saved) -->
+      <div id="chat-setup">
+        <div class="chat-setup-card">
+          <div class="chat-setup-icon">🤖</div>
+          <h2>AI Knitting Assistant</h2>
+          <p>Enter your <strong>OpenRouter API key</strong> to chat with an AI knitting expert. Get help understanding patterns, abbreviations, and techniques.</p>
+          <input id="or-key-input" type="password" placeholder="sk-or-v1-…" autocomplete="off" />
+          <button id="or-key-save" class="btn primary">Save Key &amp; Start Chatting</button>
+          <p class="chat-setup-hint">Free keys available at <strong>openrouter.ai</strong> · Key stays on your device only.</p>
+        </div>
+      </div>
+      <!-- Chat UI (shown when key exists) -->
+      <div id="chat-main" class="hidden">
+        <div id="chat-messages"></div>
+        <div id="chat-input-row">
+          <textarea id="chat-input" placeholder="Ask about your pattern… (Enter to send)" rows="1"></textarea>
+          <button id="chat-send" class="chat-send-btn" title="Send">➤</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom navigation -->
+    <nav id="bottom-nav">
+      <button data-view="projects" class="active">
+        <span class="nav-icon">🧶</span>
+        <span class="nav-label">Projects</span>
+      </button>
+      <button data-view="glossary">
+        <span class="nav-icon">📖</span>
+        <span class="nav-label">Glossary</span>
+      </button>
+      <button data-view="chat">
+        <span class="nav-icon">💬</span>
+        <span class="nav-label">AI Chat</span>
+      </button>
+    </nav>
   </div>
 
   <!-- Modal: new/rename project -->
@@ -65,7 +113,6 @@
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {
-        // Try repo-root path for GitHub Pages
         navigator.serviceWorker.register('./sw.js');
       });
     }
