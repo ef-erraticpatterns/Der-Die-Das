@@ -7,9 +7,24 @@ function load() {
 }
 
 function save(state) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch (e) {
-    if (e.name === 'QuotaExceededError') alert('Storage is almost full. Consider removing PDF patterns to free space.');
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      // Strip PDF data and retry — steps/counters are more important than the cached PDF
+      try {
+        const slim = {
+          ...state,
+          projects: state.projects.map(p => ({ ...p, pdfData: null, patternText: null, patternAnalysis: null }))
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
+        state.projects.forEach(p => { p.pdfData = null; p.patternText = null; p.patternAnalysis = null; });
+        alert('Storage was full — your PDF was removed to save your steps and counters. You can re-upload the PDF anytime.');
+        renderProject();
+      } catch {
+        alert('Storage is completely full. Please clear some browser data and try again.');
+      }
+    }
   }
 }
 
