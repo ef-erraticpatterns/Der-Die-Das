@@ -289,6 +289,404 @@ function unpinTermFromStep(stepId, abbr) {
   renderProject();
 }
 
+// ── Pattern Guide ─────────────────────────────────────────────────────────────
+
+let wizardProjectId = null;
+let wizardPatternText = null;
+let wizardMeta = null;
+
+function parseAIJson(raw) {
+  if (!raw) return null;
+  try { return JSON.parse(raw.trim()); } catch {}
+  const stripped = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
+  try { return JSON.parse(stripped); } catch {}
+  const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+  if (s !== -1 && e > s) try { return JSON.parse(raw.slice(s, e + 1)); } catch {}
+  return null;
+}
+
+async function callAI(userContent, systemContent) {
+  const key = localStorage.getItem('orApiKey');
+  if (!key) return null;
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://ef-erraticpatterns.github.io/Knit-Assistant',
+        'X-Title': 'Knit Assistant'
+      },
+      body: JSON.stringify({
+        model: localStorage.getItem('orModel') || 'mistralai/mistral-7b-instruct:free',
+        messages: [{ role: 'system', content: systemContent }, { role: 'user', content: userContent }],
+        temperature: 0.1
+      })
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d.choices[0].message.content;
+  } catch { return null; }
+}
+
+async function runPhase1(text) {
+  const raw = await callAI(
+    `Analyse this knitting pattern carefully. Return ONLY valid JSON (no markdown, no explanation):
+{
+  "patternName": "name",
+  "garmentType": "sweater/hat/shawl/etc",
+  "description": "1-2 sentence description",
+  "materials": { "yarn": "...", "needles": "...", "gauge": "..." },
+  "questions": [
+    { "id": "size", "question": "Which size?", "type": "choice", "options": ["XS","S","M","L","XL"] }
+  ]
+}
+Only include questions actually needed (sizes if multiple exist, versions if the pattern has variants). Use empty array if no questions needed.
+
+Pattern text:
+${text.slice(0, 5000)}`,
+    'You are an expert knitting pattern analyst. Extract information accurately. Return ONLY valid JSON.'
+  );
+  return parseAIJson(raw);
+}
+
+async function runPhase2(text, meta, answers) {
+  const answerStr = Object.entries(answers).map(([k, v]) => `${k}: ${v}`).join(', ') || 'no choices needed';
+  const raw = await callAI(
+    `Create a complete step-by-step knitting guide. User choices: ${answerStr}.
+
+Be extremely careful and accurate — mistakes cost hours of knitting work. Extract EVERY section in order. For each section:
+- Identify what type of knitting it is
+- Rewrite each instruction in plain English while keeping the original
+- List every abbreviation used with a clear explanation
+- Note the row/round target if given
+
+Return ONLY valid JSON:
+{
+  "patternName": "name",
+  "sizeChosen": "chosen size or One Size",
+  "sections": [
+    {
+      "id": "s1",
+      "title": "Section title",
+      "type": "cast-on",
+      "badge": "Cast On",
+      "description": "What this section does in 1 sentence",
+      "instructions": [
+        {
+          "step": 1,
+          "original": "exact text from pattern",
+          "plain": "plain English explanation",
+          "abbreviations": [{"abbr": "CO", "meaning": "Cast On — place new stitches on needle"}]
+        }
+      ],
+      "progress": { "type": "rows", "target": 20, "label": "rows" }
+    }
+  ]
+}
+
+For progress.type use: "rows", "rounds", "stitches", or "none"
+For type use: cast-on, ribbing, stockinette, increases, decreases, short-rows, cables, shaping, colorwork, finishing, setup
+
+Pattern:
+${text.slice(0, 6000)}`,
+    'You are an expert knitting guide creator. Every instruction must be accurate — this is safety-critical for the user\'s project. Return ONLY valid JSON.'
+  );
+  const guide = parseAIJson(raw);
+  if (!guide?.sections) return null;
+  guide.sections = guide.sections.map((s, i) => ({
+    ...s,
+    id: s.id || `s${i}`,
+    currentProgress: 0,
+    isComplete: false
+  }));
+  return guide;
+}
+
+// ── Wizard ────────────────────────────────────────────────────────────────────
+
+function openWizard(projectId) {
+  wizardProjectId = projectId;
+  wizardPatternText = null;
+  wizardMeta = null;
+  document.getElementById('wizard-overlay').classList.remove('hidden');
+  showWizardStep('upload');
+}
+
+function closeWizard() {
+  document.getElementById('wizard-overlay').classList.add('hidden');
+  wizardProjectId = null; wizardPatternText = null; wizardMeta = null;
+}
+
+function setWizardBar(pct) {
+  document.getElementById('wizard-bar').style.width = pct + '%';
+}
+
+function showWizardStep(step, data) {
+  const body = document.getElementById('wizard-body');
+  const titleEl = document.getElementById('wizard-title');
+  const closeBtn = document.getElementById('wizard-close');
+  body.innerHTML = '';
+
+  if (step === 'upload') {
+    titleEl.textContent = 'Import Your Pattern';
+    closeBtn.classList.remove('hidden');
+    setWizardBar(0);
+    const desc = el('p', 'wizard-desc', 'Upload your PDF pattern. The AI will read it carefully, ask about your size, then build a personal step-by-step guide — no PDF stored.');
+    const lbl = document.createElement('label');
+    lbl.className = 'wizard-upload-area';
+    lbl.innerHTML = '<span>📄 Tap to choose your pattern PDF</span><input type="file" accept="application/pdf" />';
+    lbl.querySelector('input').addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      showWizardStep('extracting');
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        const text = await extractPdfText(ev.target.result);
+        if (!text) { showWizardStep('error', 'Could not read text from this PDF. It may be a scanned image.'); return; }
+        wizardPatternText = text;
+        showWizardStep('analyzing');
+        const meta = await runPhase1(text);
+        if (!meta) { showWizardStep('error', 'Could not analyse the pattern. Check your OpenRouter key in the Chat tab and try again.'); return; }
+        wizardMeta = meta;
+        showWizardStep('questions', meta);
+      };
+      reader.readAsDataURL(file);
+    });
+    body.append(desc, lbl);
+
+  } else if (step === 'extracting') {
+    titleEl.textContent = 'Reading PDF…'; closeBtn.classList.add('hidden'); setWizardBar(15);
+    body.innerHTML = wizardLoadingHTML('Extracting text from your pattern…');
+
+  } else if (step === 'analyzing') {
+    titleEl.textContent = 'Analysing Pattern…'; closeBtn.classList.add('hidden'); setWizardBar(35);
+    body.innerHTML = wizardLoadingHTML('AI is reading your pattern, identifying sections and sizes…');
+
+  } else if (step === 'questions') {
+    const meta = data;
+    titleEl.textContent = meta.patternName || 'Your Pattern';
+    closeBtn.classList.remove('hidden'); setWizardBar(60);
+
+    if (meta.description) body.appendChild(el('p', 'wizard-desc', meta.description));
+
+    if (meta.materials) {
+      const mat = document.createElement('div'); mat.className = 'wizard-materials';
+      const m = meta.materials;
+      if (m.yarn)    mat.innerHTML += `<span>🧶 <strong>Yarn:</strong> ${m.yarn}</span>`;
+      if (m.needles) mat.innerHTML += `<span>🪡 <strong>Needles:</strong> ${m.needles}</span>`;
+      if (m.gauge)   mat.innerHTML += `<span>📐 <strong>Gauge:</strong> ${m.gauge}</span>`;
+      body.appendChild(mat);
+    }
+
+    const answers = {};
+    if (meta.questions?.length > 0) {
+      const qSec = document.createElement('div'); qSec.className = 'wizard-questions';
+      meta.questions.forEach(q => {
+        const qDiv = document.createElement('div'); qDiv.className = 'wizard-question';
+        qDiv.appendChild(el('p', 'wizard-q-label', q.question));
+        if (q.type === 'choice' && q.options) {
+          const opts = document.createElement('div'); opts.className = 'wizard-options';
+          q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'wizard-option-btn'; btn.textContent = opt;
+            btn.addEventListener('click', () => {
+              opts.querySelectorAll('.wizard-option-btn').forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected'); answers[q.id] = opt;
+            });
+            opts.appendChild(btn);
+          });
+          qDiv.appendChild(opts);
+        } else {
+          const inp = document.createElement('input');
+          inp.className = 'wizard-text-input'; inp.placeholder = 'Your answer…';
+          inp.addEventListener('input', () => { answers[q.id] = inp.value; });
+          qDiv.appendChild(inp);
+        }
+        qSec.appendChild(qDiv);
+      });
+      body.appendChild(qSec);
+    }
+
+    const genBtn = document.createElement('button');
+    genBtn.className = 'btn primary wizard-gen-btn'; genBtn.textContent = '✨ Build My Guide';
+    genBtn.addEventListener('click', async () => {
+      showWizardStep('generating');
+      const guide = await runPhase2(wizardPatternText, wizardMeta, answers);
+      if (!guide) { showWizardStep('error', 'Could not generate the guide. Try again or use a more capable AI model.'); return; }
+      const p = getProject(wizardProjectId);
+      if (p) {
+        p.guide = guide;
+        p.pdfData = null; p.patternText = null; p.patternAnalysis = null;
+        save(state);
+      }
+      closeWizard(); render();
+    });
+    body.appendChild(genBtn);
+
+  } else if (step === 'generating') {
+    titleEl.textContent = 'Building Your Guide…'; closeBtn.classList.add('hidden'); setWizardBar(80);
+    body.innerHTML = wizardLoadingHTML('Creating your personalised step-by-step guide — this may take up to a minute…');
+
+  } else if (step === 'error') {
+    titleEl.textContent = 'Something went wrong'; closeBtn.classList.remove('hidden'); setWizardBar(0);
+    const errDiv = document.createElement('div'); errDiv.className = 'wizard-error';
+    errDiv.appendChild(el('p', '', `⚠️ ${data}`));
+    const retry = document.createElement('button'); retry.className = 'btn secondary'; retry.textContent = 'Start over';
+    retry.addEventListener('click', () => showWizardStep('upload'));
+    errDiv.appendChild(retry); body.appendChild(errDiv);
+  }
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+function wizardLoadingHTML(msg) {
+  return `<div class="wizard-loading"><div class="wizard-spinner"></div><p>${msg}</p></div>`;
+}
+
+// ── Guide rendering ───────────────────────────────────────────────────────────
+
+function renderGuideInto(p, container) {
+  const guide = p.guide;
+  const total = guide.sections.length;
+  const done = guide.sections.filter(s => s.isComplete).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  // Header
+  const hdr = document.createElement('div'); hdr.className = 'guide-header';
+  const titleWrap = document.createElement('div'); titleWrap.className = 'guide-title';
+  const nameEl = document.createElement('strong'); nameEl.textContent = guide.patternName || 'Pattern';
+  const sizeEl = document.createElement('span'); sizeEl.textContent = guide.sizeChosen || '';
+  titleWrap.append(nameEl, sizeEl);
+  const reimportBtn = document.createElement('button');
+  reimportBtn.className = 'btn small secondary'; reimportBtn.textContent = 'Re-import';
+  reimportBtn.addEventListener('click', () => {
+    if (confirm('Replace this guide with a new pattern import?')) { p.guide = null; save(state); renderProject(); }
+  });
+  hdr.append(titleWrap, reimportBtn);
+  container.appendChild(hdr);
+
+  // Overall progress
+  const progWrap = document.createElement('div'); progWrap.className = 'guide-overall-progress';
+  progWrap.innerHTML = `<div class="guide-prog-track"><div class="guide-prog-fill" id="guide-overall-fill" style="width:${pct}%"></div></div><span id="guide-overall-label">${done}/${total} sections complete</span>`;
+  container.appendChild(progWrap);
+
+  // Section cards
+  guide.sections.forEach(section => container.appendChild(buildGuideSection(p.id, section)));
+}
+
+function buildGuideSection(projectId, section) {
+  const card = document.createElement('div');
+  card.className = `guide-card${section.isComplete ? ' complete' : ''}`;
+  card.id = `gs-${section.id}`;
+
+  // Card header
+  const head = document.createElement('div'); head.className = 'guide-card-head';
+
+  const badge = document.createElement('span');
+  badge.className = `guide-badge type-${(section.type || 'setup').replace(/[^a-z-]/g, '')}`;
+  badge.textContent = section.badge || section.type || 'Step';
+
+  const titleCol = document.createElement('div'); titleCol.className = 'guide-card-title';
+  const titleText = document.createElement('strong'); titleText.textContent = section.title;
+  titleCol.appendChild(titleText);
+  if (section.progress?.type !== 'none' && section.progress?.target) {
+    const mini = document.createElement('span'); mini.className = 'guide-mini-prog'; mini.id = `gmp-${section.id}`;
+    mini.textContent = `${section.currentProgress || 0} / ${section.progress.target} ${section.progress.label || 'rows'}`;
+    titleCol.appendChild(mini);
+  }
+
+  const checkBtn = document.createElement('button');
+  checkBtn.className = `guide-check${section.isComplete ? ' done' : ''}`;
+  checkBtn.setAttribute('aria-label', section.isComplete ? 'Mark incomplete' : 'Mark complete');
+  checkBtn.textContent = section.isComplete ? '✓' : '○';
+  checkBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const p = getProject(projectId);
+    const s = p?.guide?.sections.find(s => s.id === section.id);
+    if (!s) return;
+    s.isComplete = !s.isComplete;
+    save(state); renderProject();
+  });
+
+  head.append(badge, titleCol, checkBtn);
+  card.appendChild(head);
+
+  // Collapsible body
+  const body = document.createElement('div');
+  body.className = `guide-card-body${section.isComplete ? ' collapsed' : ''}`;
+
+  if (section.description) body.appendChild(el('p', 'guide-section-desc', section.description));
+
+  // Instructions
+  if (section.instructions?.length > 0) {
+    const ol = document.createElement('ol'); ol.className = 'guide-instructions';
+    section.instructions.forEach(instr => {
+      const li = document.createElement('li'); li.className = 'guide-instr';
+      li.appendChild(el('p', 'guide-instr-plain', instr.plain));
+      li.appendChild(el('p', 'guide-instr-original', instr.original));
+      if (instr.abbreviations?.length > 0) {
+        const row = document.createElement('div'); row.className = 'guide-abbr-row';
+        instr.abbreviations.forEach(a => {
+          const chip = document.createElement('span'); chip.className = 'guide-abbr-chip';
+          const strong = document.createElement('strong'); strong.textContent = a.abbr;
+          const tip = document.createElement('span'); tip.className = 'guide-abbr-tip'; tip.textContent = a.meaning;
+          chip.append(strong, tip); row.appendChild(chip);
+        });
+        li.appendChild(row);
+      }
+      ol.appendChild(li);
+    });
+    body.appendChild(ol);
+  }
+
+  // Row/round progress counter
+  if (section.progress?.type !== 'none' && section.progress?.target) {
+    const ps = document.createElement('div'); ps.className = 'guide-progress-block';
+    const track = document.createElement('div'); track.className = 'guide-prog-track';
+    const fill = document.createElement('div'); fill.className = 'guide-prog-fill';
+    fill.id = `gpf-${section.id}`;
+    const pct = Math.min(100, Math.round((section.currentProgress || 0) / section.progress.target * 100));
+    fill.style.width = pct + '%';
+    track.appendChild(fill);
+
+    const controls = document.createElement('div'); controls.className = 'guide-prog-controls';
+    const dec = document.createElement('button'); dec.className = 'counter-btn dec'; dec.textContent = '−';
+    dec.addEventListener('click', () => updateSectionProgress(projectId, section.id, -1));
+    const val = document.createElement('span'); val.className = 'guide-prog-val'; val.id = `gpv-${section.id}`;
+    val.textContent = `${section.currentProgress || 0} / ${section.progress.target} ${section.progress.label || 'rows'}`;
+    const inc = document.createElement('button'); inc.className = 'counter-btn inc'; inc.textContent = '+';
+    inc.addEventListener('click', () => updateSectionProgress(projectId, section.id, +1));
+
+    controls.append(dec, val, inc);
+    ps.append(track, controls);
+    body.appendChild(ps);
+  }
+
+  head.addEventListener('click', () => body.classList.toggle('collapsed'));
+  card.appendChild(body);
+  return card;
+}
+
+function updateSectionProgress(projectId, sectionId, delta) {
+  const p = getProject(projectId);
+  const s = p?.guide?.sections.find(s => s.id === sectionId);
+  if (!s || !s.progress?.target) return;
+  s.currentProgress = Math.max(0, Math.min(s.progress.target, (s.currentProgress || 0) + delta));
+  save(state);
+  const valEl = document.getElementById(`gpv-${sectionId}`);
+  const miniEl = document.getElementById(`gmp-${sectionId}`);
+  const fillEl = document.getElementById(`gpf-${sectionId}`);
+  const label = s.progress.label || 'rows';
+  if (valEl)  valEl.textContent  = `${s.currentProgress} / ${s.progress.target} ${label}`;
+  if (miniEl) miniEl.textContent = `${s.currentProgress} / ${s.progress.target} ${label}`;
+  if (fillEl) fillEl.style.width = Math.round(s.currentProgress / s.progress.target * 100) + '%';
+}
+
 // ── Glossary data ─────────────────────────────────────────────────────────────
 const GLOSSARY = [
   { abbr: 'k', name: 'Knit', desc: 'The basic knit stitch — insert needle front-to-back, wrap yarn, pull loop through.' },
@@ -591,74 +989,24 @@ function renderProject() {
 
   main.innerHTML = '';
 
-  // PDF section
-  const pdfSec = document.createElement('div');
-  pdfSec.className = 'pdf-section';
-  const pdfHeader = document.createElement('div');
-  pdfHeader.className = 'pdf-section-header';
-  const pdfLabel = document.createElement('span');
-  pdfLabel.textContent = 'Pattern PDF';
-  pdfHeader.appendChild(pdfLabel);
-  pdfSec.appendChild(pdfHeader);
-
-  if (p.pdfData) {
-    const wrap = document.createElement('div');
-    wrap.className = 'pdf-viewer-wrap';
-    const iframe = document.createElement('iframe');
-    iframe.src = p.pdfData;
-    iframe.title = 'Pattern PDF';
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'pdf-remove-btn';
-    removeBtn.textContent = '✕ Remove';
-    removeBtn.addEventListener('click', () => removePdf(p.id));
-    wrap.append(iframe, removeBtn);
-    pdfSec.appendChild(wrap);
+  // Guide / Pattern section
+  if (p.guide) {
+    renderGuideInto(p, main);
   } else {
-    const uploadArea = document.createElement('label');
-    uploadArea.className = 'pdf-upload-area';
-    uploadArea.innerHTML = `<span>📄 Tap to upload your pattern PDF</span><input type="file" accept="application/pdf" />`;
-    uploadArea.querySelector('input').addEventListener('change', e => handlePdfUpload(p.id, e.target.files[0]));
-    pdfSec.appendChild(uploadArea);
-  }
-  main.appendChild(pdfSec);
-
-  // Pattern analysis section
-  if (p.pdfData) {
-    const analysisSec = document.createElement('div');
-    analysisSec.className = 'pattern-analysis-section';
-    if (isAnalyzing) {
-      const ld = document.createElement('div');
-      ld.className = 'pattern-analysis-loading';
-      ld.innerHTML = '<span></span><span></span><span></span>';
-      const ldTxt = document.createElement('p');
-      ldTxt.textContent = 'Analyzing pattern…';
-      analysisSec.append(ld, ldTxt);
-    } else if (p.patternAnalysis) {
-      const hdr = document.createElement('div');
-      hdr.className = 'pattern-analysis-header';
-      const lbl = document.createElement('span');
-      lbl.textContent = '✨ Pattern Analysis';
-      const reBtn = document.createElement('button');
-      reBtn.className = 'btn small secondary';
-      reBtn.textContent = 'Re-analyze';
-      reBtn.addEventListener('click', () => {
-        if (confirm('Re-analyze this pattern? This uses your API credits.')) {
-          p.patternAnalysis = null; save(state); analyzePattern(p.id);
-        }
-      });
-      hdr.append(lbl, reBtn);
-      const body = document.createElement('div');
-      body.className = 'pattern-analysis-content';
-      body.innerHTML = minMarkdown(p.patternAnalysis);
-      analysisSec.append(hdr, body);
-    } else if (p.patternText) {
-      const btn = document.createElement('button');
-      btn.className = 'btn primary full-width';
-      btn.textContent = '✨ Analyze Pattern with AI';
-      btn.addEventListener('click', () => analyzePattern(p.id));
-      analysisSec.appendChild(btn);
-    }
-    if (analysisSec.children.length > 0) main.appendChild(analysisSec);
+    const importSec = document.createElement('div');
+    importSec.className = 'guide-import-section';
+    const importBtn = document.createElement('button');
+    importBtn.className = 'btn primary full-width';
+    importBtn.innerHTML = '📄 Import Pattern from PDF';
+    importBtn.addEventListener('click', () => {
+      if (!localStorage.getItem('orApiKey')) {
+        alert('Set up your OpenRouter API key in the AI Chat tab first — it\'s needed to read your pattern.');
+        switchView('chat'); return;
+      }
+      openWizard(p.id);
+    });
+    importSec.appendChild(importBtn);
+    main.appendChild(importSec);
   }
 
   // Steps section
@@ -932,6 +1280,9 @@ document.getElementById('modal-cancel').addEventListener('click', closeModal);
 document.getElementById('modal-confirm').addEventListener('click', confirmModal);
 document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 document.getElementById('modal-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmModal(); if (e.key === 'Escape') closeModal(); });
+
+document.getElementById('wizard-close').addEventListener('click', closeWizard);
+document.getElementById('wizard-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeWizard(); });
 
 document.getElementById('pin-modal-cancel').addEventListener('click', closePinTermModal);
 document.getElementById('pin-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closePinTermModal(); });
