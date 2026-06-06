@@ -121,8 +121,45 @@
     </div>
   </div>
 
+  <!-- Feedback widget -->
+  <button id="fb-btn" title="Feedback to Claude" aria-label="Open feedback panel">🛠</button>
+
+  <div id="fb-panel" class="hidden" role="complementary" aria-label="Feedback to Claude">
+    <div id="fb-header">
+      <span>🛠 Claude Feedback</span>
+      <button id="fb-close" aria-label="Close panel">✕</button>
+    </div>
+
+    <div id="fb-status-section">
+      <div class="fb-status-row">
+        <div id="fb-dot" class="fb-dot idle" title="idle"></div>
+        <div class="fb-status-text">
+          <span class="fb-label">Working on</span>
+          <span id="fb-task">—</span>
+        </div>
+      </div>
+      <div class="fb-status-row">
+        <div class="fb-dot" style="opacity:0;flex-shrink:0"></div>
+        <div class="fb-status-text">
+          <span class="fb-label">Last completed</span>
+          <span id="fb-done">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="fb-picker-section">
+      <button id="fb-pick" class="fb-pick-btn">🎯 Pick an element</button>
+      <div id="fb-pick-info" class="fb-pick-info"></div>
+    </div>
+
+    <textarea id="fb-text" placeholder="Describe what you want changed… (Ctrl+Enter to copy)" rows="3"></textarea>
+
+    <button id="fb-copy">📋 Copy instruction to clipboard</button>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="app.js"></script>
+  <script src="feedback.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {
