@@ -529,3 +529,71 @@ main {
   -webkit-tap-highlight-color: transparent;
 }
 .chat-chip:hover { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+/* ── Glossary pin button ── */
+.glossary-card { align-items: flex-start; }
+.glossary-pin-btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
+  background: none;
+  border: 1px solid var(--surface2);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: .75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.glossary-pin-btn:hover { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+/* ── Pin term modal ── */
+#pin-modal {
+  background: var(--surface); border-radius: var(--radius);
+  padding: 24px; width: 100%; max-width: 360px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+#pin-modal h2 { font-size: 1rem; color: var(--accent); }
+#pin-modal-desc { font-size: .82rem; color: var(--text-muted); line-height: 1.45; }
+#pin-modal-steps { display: flex; flex-direction: column; gap: 8px; }
+
+.pin-modal-empty { font-size: .85rem; color: var(--text-muted); text-align: center; padding: 12px 0; }
+
+.pin-step-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border: 1px solid transparent;
+  color: var(--text); border-radius: 8px;
+  padding: 10px 14px; font-size: .9rem;
+  cursor: pointer; text-align: left;
+  transition: border-color .15s, background .15s;
+}
+.pin-step-btn:hover:not(:disabled) { border-color: var(--accent2); background: var(--surface); }
+.pin-step-btn.pinned { opacity: .5; cursor: default; }
+.pin-check { font-size: .78rem; color: var(--green); }
+
+/* ── Step pinned references ── */
+.step-refs {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface2);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.step-refs-header {
+  font-size: .7rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.step-ref {
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.step-ref-abbr { font-size: .72rem; padding: 2px 6px; flex-shrink: 0; margin-top: 1px; }
+.step-ref-body { flex: 1; }
+.step-ref-body strong { font-size: .85rem; color: var(--text); display: block; margin-bottom: 2px; }
+.step-ref-body p { font-size: .78rem; color: var(--text-muted); line-height: 1.45; }
+.step-ref-remove {
+  flex-shrink: 0; background: none; border: none;
+  color: var(--text-muted); font-size: 1rem; cursor: pointer;
+  padding: 0 4px; opacity: .4; line-height: 1; margin-top: 1px;
+}
+.step-ref-remove:hover { color: var(--danger); opacity: 1; }

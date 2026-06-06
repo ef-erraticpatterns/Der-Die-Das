@@ -57,7 +57,7 @@ function addStep(projectId, name, counterCount) {
   const counters = Array.from({ length: counterCount }, (_, i) => ({
     id: uid(), label: i === 0 ? 'Row' : `Counter ${i + 1}`, value: 0
   }));
-  p.steps.push({ id: uid(), name, checked: false, counters });
+  p.steps.push({ id: uid(), name, checked: false, counters, pinnedTerms: [] });
   save(state);
   renderProject();
 }
@@ -222,6 +222,58 @@ function minMarkdown(text) {
     .replace(/\n/g, '<br>');
 }
 
+// ── Pinned glossary terms ─────────────────────────────────────────────────────
+let _pinTerm = null;
+
+function openPinTermModal(term) {
+  _pinTerm = term;
+  const p = activeProject();
+  document.getElementById('pin-modal-title').textContent = `Add "${term.name}" to a step`;
+  document.getElementById('pin-modal-desc').textContent = term.desc;
+  const stepsDiv = document.getElementById('pin-modal-steps');
+  stepsDiv.innerHTML = '';
+  if (!p || p.steps.length === 0) {
+    stepsDiv.innerHTML = '<p class="pin-modal-empty">No steps yet — add a step to your project first.</p>';
+  } else {
+    p.steps.forEach(step => {
+      const already = (step.pinnedTerms || []).some(t => t.abbr === term.abbr);
+      const btn = document.createElement('button');
+      btn.className = 'pin-step-btn' + (already ? ' pinned' : '');
+      btn.disabled = already;
+      btn.innerHTML = `<span>${step.name}</span>${already ? '<span class="pin-check">✓ Added</span>' : ''}`;
+      btn.addEventListener('click', () => { pinTermToStep(step.id, term); closePinTermModal(); });
+      stepsDiv.appendChild(btn);
+    });
+  }
+  document.getElementById('pin-modal-overlay').classList.remove('hidden');
+}
+
+function closePinTermModal() {
+  document.getElementById('pin-modal-overlay').classList.add('hidden');
+  _pinTerm = null;
+}
+
+function pinTermToStep(stepId, term) {
+  const p = activeProject();
+  const step = p?.steps.find(s => s.id === stepId);
+  if (!step) return;
+  if (!step.pinnedTerms) step.pinnedTerms = [];
+  if (!step.pinnedTerms.some(t => t.abbr === term.abbr)) {
+    step.pinnedTerms.push({ abbr: term.abbr, name: term.name, desc: term.desc });
+    save(state);
+    if (currentView === 'projects') renderProject();
+  }
+}
+
+function unpinTermFromStep(stepId, abbr) {
+  const p = activeProject();
+  const step = p?.steps.find(s => s.id === stepId);
+  if (!step) return;
+  step.pinnedTerms = (step.pinnedTerms || []).filter(t => t.abbr !== abbr);
+  save(state);
+  renderProject();
+}
+
 // ── Glossary data ─────────────────────────────────────────────────────────────
 const GLOSSARY = [
   { abbr: 'k', name: 'Knit', desc: 'The basic knit stitch — insert needle front-to-back, wrap yarn, pull loop through.' },
@@ -352,7 +404,12 @@ function renderGlossary(filter) {
     const desc = document.createElement('p');
     desc.textContent = term.desc;
     body.append(name, desc);
-    card.append(abbr, body);
+    const pinBtn = document.createElement('button');
+    pinBtn.className = 'glossary-pin-btn';
+    pinBtn.title = 'Add to step';
+    pinBtn.textContent = '＋ Step';
+    pinBtn.addEventListener('click', () => openPinTermModal(term));
+    card.append(abbr, body, pinBtn);
     results.appendChild(card);
   });
 }
@@ -663,6 +720,39 @@ function buildStepCard(projectId, step) {
   countersEl.className = 'counters';
   step.counters.forEach(counter => countersEl.appendChild(buildCounter(projectId, step.id, counter)));
   card.appendChild(countersEl);
+
+  const refs = step.pinnedTerms || [];
+  if (refs.length > 0) {
+    const refsEl = document.createElement('div');
+    refsEl.className = 'step-refs';
+    const refsHdr = document.createElement('div');
+    refsHdr.className = 'step-refs-header';
+    refsHdr.textContent = 'References';
+    refsEl.appendChild(refsHdr);
+    refs.forEach(term => {
+      const row = document.createElement('div');
+      row.className = 'step-ref';
+      const abbrEl = document.createElement('span');
+      abbrEl.className = 'glossary-abbr step-ref-abbr';
+      abbrEl.textContent = term.abbr;
+      const bodyEl = document.createElement('div');
+      bodyEl.className = 'step-ref-body';
+      const nameEl = document.createElement('strong');
+      nameEl.textContent = term.name;
+      const descEl = document.createElement('p');
+      descEl.textContent = term.desc;
+      bodyEl.append(nameEl, descEl);
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'step-ref-remove';
+      removeBtn.title = 'Remove reference';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', () => unpinTermFromStep(step.id, term.abbr));
+      row.append(abbrEl, bodyEl, removeBtn);
+      refsEl.appendChild(row);
+    });
+    card.appendChild(refsEl);
+  }
+
   return card;
 }
 
@@ -827,6 +917,9 @@ document.getElementById('modal-cancel').addEventListener('click', closeModal);
 document.getElementById('modal-confirm').addEventListener('click', confirmModal);
 document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 document.getElementById('modal-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmModal(); if (e.key === 'Escape') closeModal(); });
+
+document.getElementById('pin-modal-cancel').addEventListener('click', closePinTermModal);
+document.getElementById('pin-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closePinTermModal(); });
 
 document.getElementById('step-modal-cancel').addEventListener('click', closeStepModal);
 document.getElementById('step-modal-confirm').addEventListener('click', confirmStepModal);
