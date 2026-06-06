@@ -133,62 +133,8 @@
     </div>
   </div>
 
-  <!-- Feedback widget -->
-  <button id="fb-btn" title="Feedback to Claude" aria-label="Open feedback panel">🛠</button>
-
-  <div id="fb-panel" class="hidden" role="complementary" aria-label="Feedback to Claude">
-    <div id="fb-header">
-      <span>🛠 Claude Feedback</span>
-      <div class="fb-header-btns">
-        <button id="fb-gear" title="Disconnect GitHub token" style="visibility:hidden">⚙</button>
-        <button id="fb-close" aria-label="Close panel">✕</button>
-      </div>
-    </div>
-
-    <!-- Setup: shown when no GitHub token saved -->
-    <div id="fb-setup">
-      <div class="fb-setup-icon">🔑</div>
-      <p>Connect GitHub to send instructions directly to Claude without copy-pasting.</p>
-      <input id="fb-token-input" type="password" placeholder="GitHub Personal Access Token" autocomplete="off" />
-      <p class="fb-setup-hint">Needs <strong>public_repo</strong> scope ·
-        <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=Knit+Assistant+Feedback" target="_blank" rel="noopener">Create token ↗</a>
-      </p>
-      <button id="fb-token-save" class="btn primary">Connect</button>
-    </div>
-
-    <!-- Main: shown when token exists -->
-    <div id="fb-main" class="hidden">
-      <div id="fb-status-section">
-        <div class="fb-status-row">
-          <div id="fb-dot" class="fb-dot idle" title="idle"></div>
-          <div class="fb-status-text">
-            <span class="fb-label">Working on</span>
-            <span id="fb-task">—</span>
-          </div>
-        </div>
-        <div class="fb-status-row">
-          <div class="fb-dot" style="opacity:0;flex-shrink:0"></div>
-          <div class="fb-status-text">
-            <span class="fb-label">Last completed</span>
-            <span id="fb-done">—</span>
-          </div>
-        </div>
-      </div>
-
-      <div id="fb-picker-section">
-        <button id="fb-pick" class="fb-pick-btn">🎯 Pick an element</button>
-        <div id="fb-pick-info" class="fb-pick-info"></div>
-      </div>
-
-      <textarea id="fb-text" placeholder="Describe what you want changed… (Ctrl+Enter to send)" rows="3"></textarea>
-
-      <button id="fb-send">📨 Send to Claude</button>
-    </div>
-  </div>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="app.js"></script>
-  <script src="feedback.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {
