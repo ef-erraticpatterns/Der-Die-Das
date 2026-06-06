@@ -45,8 +45,18 @@
           <h2>AI Knitting Assistant</h2>
           <p>Enter your <strong>OpenRouter API key</strong> to chat with an AI knitting expert. Get help understanding patterns, abbreviations, and techniques.</p>
           <input id="or-key-input" type="password" placeholder="sk-or-v1-…" autocomplete="off" />
-          <button id="or-key-save" class="btn primary">Save Key &amp; Start Chatting</button>
-          <p class="chat-setup-hint">Free keys available at <strong>openrouter.ai</strong> · Key stays on your device only.</p>
+          <label class="model-select-label">AI Model
+            <select id="or-model-select">
+              <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (free)</option>
+              <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (free)</option>
+              <option value="google/gemma-2-9b-it:free">Gemma 2 9B (free)</option>
+              <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (free)</option>
+              <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (free)</option>
+              <option value="anthropic/claude-haiku-4-5">Claude Haiku (paid)</option>
+            </select>
+          </label>
+          <button id="or-key-save" class="btn primary">Save &amp; Start Chatting</button>
+          <p class="chat-setup-hint">Free keys at <strong>openrouter.ai</strong> · Key stays on your device only.</p>
         </div>
       </div>
       <!-- Chat UI (shown when key exists) -->

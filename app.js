@@ -211,7 +211,7 @@ async function analyzePattern(projectId) {
         'X-Title': 'Knit Assistant'
       },
       body: JSON.stringify({
-        model: localStorage.getItem('orModel') || 'mistralai/mistral-7b-instruct:free',
+        model: localStorage.getItem('orModel') || 'meta-llama/llama-3.1-8b-instruct:free',
         messages: [
           { role: 'system', content: 'You are a knitting expert. Analyze knitting patterns concisely and practically.' },
           { role: 'user', content: `Analyze this knitting pattern and give a brief structured summary with these sections:\n**Project**: what is being made\n**Materials**: yarn weight, needle size, yardage needed\n**Gauge**: stitches/rows per 4 inches if given\n**Key abbreviations**: any custom or important ones defined\n**Pattern sections**: main parts of the pattern in order\n**Notes**: important warnings or tips\n\nPattern text:\n${p.patternText.slice(0, 4000)}` }
@@ -318,7 +318,7 @@ async function callAI(userContent, systemContent) {
         'X-Title': 'Knit Assistant'
       },
       body: JSON.stringify({
-        model: localStorage.getItem('orModel') || 'mistralai/mistral-7b-instruct:free',
+        model: localStorage.getItem('orModel') || 'meta-llama/llama-3.1-8b-instruct:free',
         messages: [{ role: 'system', content: systemContent }, { role: 'user', content: userContent }],
         temperature: 0.1
       })
@@ -929,7 +929,7 @@ async function sendChatMessage() {
         'X-Title': 'Knit Assistant'
       },
       body: JSON.stringify({
-        model: localStorage.getItem('orModel') || 'mistralai/mistral-7b-instruct:free',
+        model: localStorage.getItem('orModel') || 'meta-llama/llama-3.1-8b-instruct:free',
         messages: [
           { role: 'system', content: buildSystemPrompt() },
           ...chatHistory
@@ -1307,10 +1307,22 @@ document.getElementById('chat-input').addEventListener('input', function () {
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
 
+// Populate model select from saved value
+(function () {
+  const saved = localStorage.getItem('orModel');
+  const sel = document.getElementById('or-model-select');
+  if (saved) {
+    const opt = Array.from(sel.options).find(o => o.value === saved);
+    if (opt) opt.selected = true;
+  }
+})();
+
 document.getElementById('or-key-save').addEventListener('click', () => {
   const key = document.getElementById('or-key-input').value.trim();
   if (!key) return;
   localStorage.setItem('orApiKey', key);
+  const model = document.getElementById('or-model-select').value;
+  if (model) localStorage.setItem('orModel', model);
   document.getElementById('or-key-input').value = '';
   showChatMain();
 });
@@ -1319,10 +1331,18 @@ document.getElementById('or-key-input').addEventListener('keydown', e => {
 });
 
 document.getElementById('chat-settings-btn').addEventListener('click', () => {
-  if (confirm('Remove your OpenRouter API key?')) {
-    localStorage.removeItem('orApiKey');
-    chatHistory = [];
-    showChatSetup();
+  const current = localStorage.getItem('orModel') || 'meta-llama/llama-3.1-8b-instruct:free';
+  const choice = prompt(`Current model: ${current}\n\nEnter a model ID to switch, or leave blank to just remove your API key.\nFree options:\n• meta-llama/llama-3.1-8b-instruct:free\n• google/gemma-2-9b-it:free\n• qwen/qwen-2-7b-instruct:free`, current);
+  if (choice === null) return;
+  if (choice.trim()) {
+    localStorage.setItem('orModel', choice.trim());
+    alert(`Model switched to: ${choice.trim()}`);
+  } else {
+    if (confirm('Remove your OpenRouter API key?')) {
+      localStorage.removeItem('orApiKey');
+      chatHistory = [];
+      showChatSetup();
+    }
   }
 });
 

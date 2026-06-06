@@ -387,6 +387,14 @@ main {
 }
 .chat-setup-card input:focus { outline: none; border-color: var(--accent); }
 .chat-setup-card .btn { width: 100%; }
+.model-select-label {
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: .75rem; color: var(--text-muted); text-align: left; width: 100%;
+}
+.model-select-label select {
+  background: var(--surface2); border: 1px solid var(--accent2);
+  color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: .85rem;
+}
 .chat-setup-hint { font-size: .75rem; color: var(--text-muted); }
 
 #chat-main {
