@@ -1,6 +1,7 @@
-// ── Feedback widget (dev tool) ────────────────────────────────────────────────
+// ── Feedback widget ────────────────────────────────────────────────────────────
 (function () {
   const STATUS_URL = 'https://raw.githubusercontent.com/ef-erraticpatterns/Knit-Assistant/main/_status.json';
+  const ISSUES_URL = 'https://api.github.com/repos/ef-erraticpatterns/Knit-Assistant/issues';
 
   let fbOpen = false;
   let pickerActive = false;
@@ -10,7 +11,7 @@
 
   function $(id) { return document.getElementById(id); }
 
-  // ── Highlight overlay box ──────────────────────────────────────────────────
+  // ── Highlight box ──────────────────────────────────────────────────────────
   function getHlBox() {
     if (!hlBox) {
       hlBox = document.createElement('div');
@@ -58,18 +59,15 @@
   }
 
   function onMove(e) {
-    const panel = $('fb-panel');
-    if (panel && panel.contains(e.target)) return;
+    if ($('fb-panel').contains(e.target)) return;
     if (e.target === $('fb-btn')) return;
     moveHl(e.target);
   }
 
   function onClick(e) {
-    const panel = $('fb-panel');
-    if (panel && panel.contains(e.target)) return;
+    if ($('fb-panel').contains(e.target)) return;
     if (e.target === $('fb-btn')) return;
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     pickedEl = e.target;
     stopPicker();
     $('fb-pick-info').textContent = describeEl(pickedEl);
@@ -99,22 +97,32 @@
 
   // ── Status polling ─────────────────────────────────────────────────────────
   async function pollStatus() {
-    const dot    = $('fb-dot');
-    const taskEl = $('fb-task');
-    const doneEl = $('fb-done');
     try {
       const res = await fetch(STATUS_URL + '?nc=' + Date.now());
       if (!res.ok) throw new Error();
       const d = await res.json();
-      dot.className = 'fb-dot ' + (d.status || 'idle');
-      dot.title = d.status || 'idle';
-      taskEl.textContent = d.current_task || '—';
-      doneEl.textContent = d.last_completed || '—';
+      $('fb-dot').className = 'fb-dot ' + (d.status || 'idle');
+      $('fb-dot').title = d.status || 'idle';
+      $('fb-task').textContent = d.current_task || '—';
+      $('fb-done').textContent = d.last_completed || '—';
     } catch {
-      dot.className = 'fb-dot offline';
-      dot.title = 'offline';
-      taskEl.textContent = 'Cannot reach server';
+      $('fb-dot').className = 'fb-dot offline';
+      $('fb-dot').title = 'offline';
+      $('fb-task').textContent = 'Cannot reach server';
     }
+  }
+
+  // ── Setup / Main views ─────────────────────────────────────────────────────
+  function showSetup() {
+    $('fb-setup').classList.remove('hidden');
+    $('fb-main').classList.add('hidden');
+    $('fb-gear').style.visibility = 'hidden';
+  }
+
+  function showMain() {
+    $('fb-setup').classList.add('hidden');
+    $('fb-main').classList.remove('hidden');
+    $('fb-gear').style.visibility = 'visible';
   }
 
   // ── Open / Close ───────────────────────────────────────────────────────────
@@ -122,8 +130,14 @@
     fbOpen = true;
     $('fb-panel').classList.remove('hidden');
     $('fb-btn').classList.add('open');
-    pollStatus();
-    pollTimer = setInterval(pollStatus, 15000);
+    const token = localStorage.getItem('ghToken');
+    if (token) {
+      showMain();
+      pollStatus();
+      pollTimer = setInterval(pollStatus, 15000);
+    } else {
+      showSetup();
+    }
   }
 
   function close() {
@@ -134,51 +148,96 @@
     clearInterval(pollTimer);
   }
 
-  // ── Copy ───────────────────────────────────────────────────────────────────
-  function fallbackCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    try { document.execCommand('copy'); } catch {}
-    document.body.removeChild(ta);
-  }
-
-  function copyInstruction() {
+  // ── Submit issue ───────────────────────────────────────────────────────────
+  async function submitIssue() {
     const text = $('fb-text').value.trim();
     if (!text) { $('fb-text').focus(); return; }
-    const ctx  = pickedEl ? '\n\n[Element: ' + describeEl(pickedEl) + ']' : '';
-    const full = text + ctx;
+    const token = localStorage.getItem('ghToken');
+    if (!token) { showSetup(); return; }
 
-    const onSuccess = () => {
-      const btn = $('fb-copy');
-      btn.textContent = '✓ Copied — paste it in the chat';
-      btn.classList.add('copied');
+    const elementCtx = pickedEl
+      ? '\n\n**Selected element:** `' + describeEl(pickedEl) + '`'
+      : '';
+    const issueBody  = text + elementCtx + '\n\n---\n*Sent from Knit Assistant feedback widget*';
+    const issueTitle = text.slice(0, 72) + (text.length > 72 ? '…' : '');
+
+    const btn = $('fb-send');
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(ISSUES_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify({ title: issueTitle, body: issueBody })
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('ghToken');
+        showSetup();
+        btn.textContent = '📨 Send to Claude';
+        btn.disabled = false;
+        alert('Token invalid or expired — please re-enter your PAT.');
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `GitHub error ${res.status}`);
+      }
+
+      const issue = await res.json();
+      btn.textContent = `✓ Sent — Issue #${issue.number}`;
+      btn.classList.add('sent');
+
       setTimeout(() => {
-        btn.textContent = '📋 Copy instruction to clipboard';
-        btn.classList.remove('copied');
+        btn.textContent = '📨 Send to Claude';
+        btn.classList.remove('sent');
+        btn.disabled = false;
         $('fb-text').value = '';
         pickedEl = null;
         $('fb-pick-info').textContent = '';
         $('fb-pick-info').className = 'fb-pick-info';
-        $('fb-pick').textContent = '🎯 Pick an element';
-      }, 2500);
-    };
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(full).then(onSuccess).catch(() => { fallbackCopy(full); onSuccess(); });
-    } else {
-      fallbackCopy(full); onSuccess();
+      }, 3000);
+    } catch (e) {
+      alert(`Failed to send: ${e.message}`);
+      btn.textContent = '📨 Send to Claude';
+      btn.disabled = false;
     }
   }
 
-  // ── Wire up events ─────────────────────────────────────────────────────────
+  // ── Wire up ────────────────────────────────────────────────────────────────
   $('fb-btn').addEventListener('click', () => fbOpen ? close() : open());
   $('fb-close').addEventListener('click', close);
+
   $('fb-pick').addEventListener('click', () => pickerActive ? stopPicker() : startPicker());
-  $('fb-copy').addEventListener('click', copyInstruction);
+  $('fb-send').addEventListener('click', submitIssue);
   $('fb-text').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) copyInstruction();
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitIssue();
+  });
+
+  $('fb-token-save').addEventListener('click', () => {
+    const t = $('fb-token-input').value.trim();
+    if (!t) return;
+    localStorage.setItem('ghToken', t);
+    $('fb-token-input').value = '';
+    showMain();
+    pollStatus();
+    pollTimer = setInterval(pollStatus, 15000);
+  });
+  $('fb-token-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') $('fb-token-save').click();
+  });
+
+  $('fb-gear').addEventListener('click', () => {
+    if (confirm('Remove your GitHub token and disconnect?')) {
+      localStorage.removeItem('ghToken');
+      clearInterval(pollTimer);
+      if (pickerActive) stopPicker();
+      showSetup();
+    }
   });
 })();

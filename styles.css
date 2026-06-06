@@ -641,11 +641,38 @@ main {
   flex-shrink: 0;
 }
 #fb-header span { font-size: .88rem; font-weight: 700; color: var(--accent); }
-#fb-close {
+.fb-header-btns { display: flex; gap: 2px; }
+#fb-close, #fb-gear {
   background: none; border: none; color: var(--text-muted);
-  font-size: 1rem; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+  font-size: .95rem; cursor: pointer; padding: 2px 6px; border-radius: 4px;
 }
-#fb-close:hover { background: var(--surface2); color: var(--text); }
+#fb-close:hover, #fb-gear:hover { background: var(--surface2); color: var(--text); }
+
+/* Setup screen */
+#fb-setup {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 20px 16px; text-align: center;
+  overflow-y: auto;
+}
+.fb-setup-icon { font-size: 2rem; }
+#fb-setup > p { font-size: .82rem; color: var(--text-muted); line-height: 1.5; }
+#fb-token-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--accent2);
+  color: var(--text); border-radius: 8px; padding: 9px 12px;
+  font-size: .88rem; text-align: center; outline: none;
+}
+#fb-token-input:focus { border-color: var(--accent); }
+#fb-token-input::placeholder { color: var(--text-muted); }
+.fb-setup-hint { font-size: .72rem; color: var(--text-muted); line-height: 1.5; }
+.fb-setup-hint a { color: var(--accent2); text-decoration: none; }
+.fb-setup-hint a:hover { text-decoration: underline; }
+#fb-setup .btn { width: 100%; }
+
+/* Main content area */
+#fb-main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
 
 #fb-status-section {
   padding: 10px 14px;
@@ -704,7 +731,7 @@ main {
 #fb-text:focus { border-color: var(--accent2); }
 #fb-text::placeholder { color: var(--text-muted); }
 
-#fb-copy {
+#fb-send {
   margin: 8px 14px 14px;
   background: var(--accent2); color: #fff;
   border: none; border-radius: 8px;
@@ -713,8 +740,9 @@ main {
   transition: opacity .15s, background .2s;
   flex-shrink: 0;
 }
-#fb-copy:hover  { opacity: .88; }
-#fb-copy.copied { background: var(--green); color: #1a0f2e; }
+#fb-send:hover    { opacity: .88; }
+#fb-send:disabled { opacity: .5; cursor: default; }
+#fb-send.sent     { background: var(--green); color: #1a0f2e; }
 
 /* Element highlight during picking */
 #fb-hl {
