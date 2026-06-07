@@ -865,7 +865,7 @@ body.fb-picking * { cursor: crosshair !important; }
 }
 .guide-card.complete { opacity: .6; }
 .guide-card.active { border-color: var(--accent2); }
-.guide-card.locked { opacity: .35; cursor: default; }
+.guide-card.locked { opacity: .55; cursor: default; }
 .guide-card.locked .guide-card-head { cursor: default; }
 .guide-check:disabled { opacity: .3; cursor: default; }
 .guide-card-head {

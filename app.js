@@ -1024,22 +1024,23 @@ function renderProject() {
     main.appendChild(importSec);
   }
 
-  // Steps section
-  const stepsSec = document.createElement('div');
-  stepsSec.className = 'steps-section';
-  const stepsHeader = document.createElement('div');
-  stepsHeader.className = 'steps-header';
-  const stepsTitle = document.createElement('h3');
-  stepsTitle.textContent = 'Steps';
-  const addStepBtn = document.createElement('button');
-  addStepBtn.className = 'btn primary small';
-  addStepBtn.textContent = '＋ Add Step';
-  addStepBtn.addEventListener('click', () => openStepModal(p.id));
-  stepsHeader.append(stepsTitle, addStepBtn);
-  stepsSec.appendChild(stepsHeader);
-
-  p.steps.forEach(step => stepsSec.appendChild(buildStepCard(p.id, step)));
-  main.appendChild(stepsSec);
+  // Manual steps — only shown when there's no AI guide
+  if (!p.guide) {
+    const stepsSec = document.createElement('div');
+    stepsSec.className = 'steps-section';
+    const stepsHeader = document.createElement('div');
+    stepsHeader.className = 'steps-header';
+    const stepsTitle = document.createElement('h3');
+    stepsTitle.textContent = 'Steps';
+    const addStepBtn = document.createElement('button');
+    addStepBtn.className = 'btn primary small';
+    addStepBtn.textContent = '＋ Add Step';
+    addStepBtn.addEventListener('click', () => openStepModal(p.id));
+    stepsHeader.append(stepsTitle, addStepBtn);
+    stepsSec.appendChild(stepsHeader);
+    p.steps.forEach(step => stepsSec.appendChild(buildStepCard(p.id, step)));
+    main.appendChild(stepsSec);
+  }
 }
 
 function buildStepCard(projectId, step) {
