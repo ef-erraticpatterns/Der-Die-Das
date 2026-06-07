@@ -355,11 +355,13 @@ async function runPhase2(text, meta, answers) {
   const raw = await callAI(
     `Create a complete step-by-step knitting guide. User choices: ${answerStr}.
 
-Be extremely careful and accurate — mistakes cost hours of knitting work. Extract EVERY section in order. For each section:
+CRITICAL: You MUST extract EVERY section from the pattern — gauge, cast-on, body, sleeves, neckline, finishing, everything. A typical pattern has 6-15 sections. Do NOT stop after the first section. Do NOT summarise — include every numbered row and instruction.
+
+Be extremely careful and accurate — mistakes cost hours of knitting work. For each section:
 - Identify what type of knitting it is
-- Rewrite each instruction in plain English while keeping the original
+- Rewrite each instruction in plain English while keeping the original text
 - List every abbreviation used with a clear explanation
-- Note the row/round target if given
+- Note the row/round/stitch target if given
 
 Return ONLY valid JSON:
 {
@@ -389,7 +391,7 @@ For progress.type use: "rows", "rounds", "stitches", or "none"
 For type use: cast-on, ribbing, stockinette, increases, decreases, short-rows, cables, shaping, colorwork, finishing, setup
 
 Pattern:
-${text.slice(0, 6000)}`,
+${text.slice(0, 12000)}`,
     'You are an expert knitting guide creator. Every instruction must be accurate — this is safety-critical for the user\'s project. Return ONLY valid JSON.'
   );
   const guide = parseAIJson(raw);
@@ -680,6 +682,23 @@ function buildGuideSection(projectId, section, isActive, isLocked) {
     controls.append(dec, val, inc);
     ps.append(track, controls);
     body.appendChild(ps);
+  }
+
+  // Skip button on locked sections — lets user fast-forward past already-done work
+  if (isLocked) {
+    const skipBtn = document.createElement('button');
+    skipBtn.className = 'btn secondary small guide-skip-btn';
+    skipBtn.textContent = 'Already done — skip';
+    skipBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const p = getProject(projectId);
+      if (!p?.guide) return;
+      // Mark all sections up to and including this one as complete
+      const idx = p.guide.sections.findIndex(s => s.id === section.id);
+      p.guide.sections.forEach((s, i) => { if (i <= idx) s.isComplete = true; });
+      save(state); renderProject();
+    });
+    body.appendChild(skipBtn);
   }
 
   // Mark done button — prominent, at bottom of active section
