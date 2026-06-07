@@ -581,13 +581,18 @@ function renderGuideInto(p, container) {
   progWrap.innerHTML = `<div class="guide-prog-track"><div class="guide-prog-fill" id="guide-overall-fill" style="width:${pct}%"></div></div><span id="guide-overall-label">${done}/${total} sections complete</span>`;
   container.appendChild(progWrap);
 
-  // Section cards
-  guide.sections.forEach(section => container.appendChild(buildGuideSection(p.id, section)));
+  // Section cards — sequential: active = first incomplete, locked = anything after it
+  const firstIncompleteIdx = guide.sections.findIndex(s => !s.isComplete);
+  guide.sections.forEach((section, i) => {
+    const isActive = i === firstIncompleteIdx;
+    const isLocked = firstIncompleteIdx !== -1 && i > firstIncompleteIdx;
+    container.appendChild(buildGuideSection(p.id, section, isActive, isLocked));
+  });
 }
 
-function buildGuideSection(projectId, section) {
+function buildGuideSection(projectId, section, isActive, isLocked) {
   const card = document.createElement('div');
-  card.className = `guide-card${section.isComplete ? ' complete' : ''}`;
+  card.className = `guide-card${section.isComplete ? ' complete' : ''}${isLocked ? ' locked' : ''}${isActive ? ' active' : ''}`;
   card.id = `gs-${section.id}`;
 
   // Card header
@@ -595,12 +600,13 @@ function buildGuideSection(projectId, section) {
 
   const badge = document.createElement('span');
   badge.className = `guide-badge type-${(section.type || 'setup').replace(/[^a-z-]/g, '')}`;
-  badge.textContent = section.badge || section.type || 'Step';
+  badge.textContent = isLocked ? '🔒' : (section.badge || section.type || 'Step');
 
   const titleCol = document.createElement('div'); titleCol.className = 'guide-card-title';
   const titleText = document.createElement('strong'); titleText.textContent = section.title;
+  titleText.style.opacity = isLocked ? '0.45' : '1';
   titleCol.appendChild(titleText);
-  if (section.progress?.type !== 'none' && section.progress?.target) {
+  if (!isLocked && section.progress?.type !== 'none' && section.progress?.target) {
     const mini = document.createElement('span'); mini.className = 'guide-mini-prog'; mini.id = `gmp-${section.id}`;
     mini.textContent = `${section.currentProgress || 0} / ${section.progress.target} ${section.progress.label || 'rows'}`;
     titleCol.appendChild(mini);
@@ -610,8 +616,10 @@ function buildGuideSection(projectId, section) {
   checkBtn.className = `guide-check${section.isComplete ? ' done' : ''}`;
   checkBtn.setAttribute('aria-label', section.isComplete ? 'Mark incomplete' : 'Mark complete');
   checkBtn.textContent = section.isComplete ? '✓' : '○';
+  checkBtn.disabled = isLocked;
   checkBtn.addEventListener('click', e => {
     e.stopPropagation();
+    if (isLocked) return;
     const p = getProject(projectId);
     const s = p?.guide?.sections.find(s => s.id === section.id);
     if (!s) return;
@@ -622,9 +630,10 @@ function buildGuideSection(projectId, section) {
   head.append(badge, titleCol, checkBtn);
   card.appendChild(head);
 
-  // Collapsible body
+  // Collapsible body — locked sections stay collapsed, active section starts open
   const body = document.createElement('div');
-  body.className = `guide-card-body${section.isComplete ? ' collapsed' : ''}`;
+  const startCollapsed = isLocked || section.isComplete;
+  body.className = `guide-card-body${startCollapsed ? ' collapsed' : ''}`;
 
   if (section.description) body.appendChild(el('p', 'guide-section-desc', section.description));
 
@@ -673,7 +682,7 @@ function buildGuideSection(projectId, section) {
     body.appendChild(ps);
   }
 
-  head.addEventListener('click', () => body.classList.toggle('collapsed'));
+  head.addEventListener('click', () => { if (!isLocked) body.classList.toggle('collapsed'); });
   card.appendChild(body);
   return card;
 }
