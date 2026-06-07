@@ -390,8 +390,8 @@ Return ONLY valid JSON:
 For progress.type use: "rows", "rounds", "stitches", or "none"
 For type use: cast-on, ribbing, stockinette, increases, decreases, short-rows, cables, shaping, colorwork, finishing, setup
 
-Pattern:
-${text.slice(0, 12000)}`,
+Pattern (${text.length} chars total${text.length > 24000 ? ', truncated to 24000' : ''}):
+${text.slice(0, 24000)}`,
     'You are an expert knitting guide creator. Every instruction must be accurate — this is safety-critical for the user\'s project. Return ONLY valid JSON.'
   );
   const guide = parseAIJson(raw);
