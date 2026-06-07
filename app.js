@@ -211,7 +211,7 @@ async function analyzePattern(projectId) {
         'X-Title': 'Knit Assistant'
       },
       body: JSON.stringify({
-        model: localStorage.getItem('orModel') || 'meta-llama/llama-3.1-8b-instruct:free',
+        model: localStorage.getItem('orModel') || 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: 'You are a knitting expert. Analyze knitting patterns concisely and practically.' },
           { role: 'user', content: `Analyze this knitting pattern and give a brief structured summary with these sections:\n**Project**: what is being made\n**Materials**: yarn weight, needle size, yardage needed\n**Gauge**: stitches/rows per 4 inches if given\n**Key abbreviations**: any custom or important ones defined\n**Pattern sections**: main parts of the pattern in order\n**Notes**: important warnings or tips\n\nPattern text:\n${p.patternText.slice(0, 4000)}` }
@@ -318,7 +318,7 @@ async function callAI(userContent, systemContent) {
         'X-Title': 'Knit Assistant'
       },
       body: JSON.stringify({
-        model: localStorage.getItem('orModel') || 'meta-llama/llama-3.1-8b-instruct:free',
+        model: localStorage.getItem('orModel') || 'google/gemini-2.5-flash',
         messages: [{ role: 'system', content: systemContent }, { role: 'user', content: userContent }],
         temperature: 0.1
       })
@@ -448,6 +448,12 @@ function showWizardStep(step, data) {
         const meta = await runPhase1(text);
         if (!meta) { showWizardStep('error', 'Could not analyse the pattern. Check your OpenRouter key in the Chat tab and try again.'); return; }
         wizardMeta = meta;
+        // Auto-name the project from the extracted pattern name
+        const proj = getProject(wizardProjectId);
+        if (proj && meta.patternName && proj.name === 'New Pattern') {
+          proj.name = meta.patternName;
+          save(state);
+        }
         showWizardStep('questions', meta);
       };
       reader.readAsDataURL(file);
@@ -929,7 +935,7 @@ async function sendChatMessage() {
         'X-Title': 'Knit Assistant'
       },
       body: JSON.stringify({
-        model: localStorage.getItem('orModel') || 'meta-llama/llama-3.1-8b-instruct:free',
+        model: localStorage.getItem('orModel') || 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: buildSystemPrompt() },
           ...chatHistory
@@ -1275,7 +1281,18 @@ function confirmStepModal() {
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────────────
-document.getElementById('add-project-btn').addEventListener('click', openCreateModal);
+document.getElementById('add-project-btn').addEventListener('click', () => {
+  if (!localStorage.getItem('orApiKey')) {
+    alert('Set up your OpenRouter API key in the AI Chat tab first — it\'s needed to read your pattern.');
+    switchView('chat'); return;
+  }
+  // Create a placeholder project, then immediately open the PDF wizard
+  const p = { id: uid(), name: 'New Pattern', pdfData: null, steps: [] };
+  state.projects.push(p);
+  state.activeId = p.id;
+  save(state);
+  openWizard(p.id);
+});
 document.getElementById('modal-cancel').addEventListener('click', closeModal);
 document.getElementById('modal-confirm').addEventListener('click', confirmModal);
 document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
@@ -1306,6 +1323,23 @@ document.getElementById('chat-input').addEventListener('input', function () {
   this.style.height = '';
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
+
+// When the mobile keyboard dismisses, scroll chat back to bottom so the
+// input row and send button are fully visible again.
+if (window.visualViewport) {
+  let lastVH = window.visualViewport.height;
+  window.visualViewport.addEventListener('resize', () => {
+    const vh = window.visualViewport.height;
+    const keyboardClosed = vh > lastVH + 100;
+    lastVH = vh;
+    if (keyboardClosed) {
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 100);
+      // Also reset any residual scroll on the page itself
+      window.scrollTo(0, 0);
+    }
+  });
+}
 
 // Populate model select from saved value
 (function () {
