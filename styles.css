@@ -910,6 +910,14 @@ body.fb-picking * { cursor: crosshair !important; }
 
 .guide-section-desc { font-size: .83rem; color: var(--text-muted); line-height: 1.5; }
 .guide-mark-done-btn { margin-top: 8px; }
+.guide-instr-highlight {
+  display: block; margin: 4px 0 6px;
+  background: rgba(105,64,165,0.12); color: #6940a5;
+  border-left: 3px solid #6940a5;
+  padding: 4px 8px; border-radius: 0 5px 5px 0;
+  font-size: .82rem; font-family: monospace; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word;
+}
 .guide-skip-btn { margin-top: 6px; font-size: .75rem; opacity: 0.8; }
 
 /* Instructions list */

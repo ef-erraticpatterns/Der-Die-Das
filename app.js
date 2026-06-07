@@ -353,15 +353,13 @@ ${text.slice(0, 5000)}`,
 async function runPhase2(text, meta, answers) {
   const answerStr = Object.entries(answers).map(([k, v]) => `${k}: ${v}`).join(', ') || 'no choices needed';
   const raw = await callAI(
-    `Create a complete step-by-step knitting guide. User choices: ${answerStr}.
+    `Create a complete beginner-friendly step-by-step knitting guide. User choices: ${answerStr}.
 
-CRITICAL: You MUST extract EVERY section from the pattern — gauge, cast-on, body, sleeves, neckline, finishing, everything. A typical pattern has 6-15 sections. Do NOT stop after the first section. Do NOT summarise — include every numbered row and instruction.
-
-Be extremely careful and accurate — mistakes cost hours of knitting work. For each section:
-- Identify what type of knitting it is
-- Rewrite each instruction in plain English while keeping the original text
-- List every abbreviation used with a clear explanation
-- Note the row/round/stitch target if given
+CRITICAL RULES:
+1. Extract EVERY section — gauge, cast-on, all body sections, front/back panels, sleeves, neckline, finishing. A garment pattern typically has 8-20 sections. Do NOT stop early.
+2. Write for a BEGINNER. Every instruction must be explained in simple plain English. Assume the knitter knows basic knit/purl but nothing else.
+3. For every row or round that has a specific stitch pattern, add a "highlight" field with the exact pattern notation (e.g. "Row 1 (RS): s2, k1, m1lyb, k to end").
+4. Keep the original text verbatim in "original". Write a friendly plain-English version in "plain".
 
 Return ONLY valid JSON:
 {
@@ -373,13 +371,14 @@ Return ONLY valid JSON:
       "title": "Section title",
       "type": "cast-on",
       "badge": "Cast On",
-      "description": "What this section does in 1 sentence",
+      "description": "What this section achieves in plain English (1 sentence, beginner-friendly)",
       "instructions": [
         {
           "step": 1,
           "original": "exact text from pattern",
-          "plain": "plain English explanation",
-          "abbreviations": [{"abbr": "CO", "meaning": "Cast On — place new stitches on needle"}]
+          "plain": "friendly plain-English explanation for a beginner",
+          "highlight": "Row 1: k2, p2 repeat to end",
+          "abbreviations": [{"abbr": "CO", "meaning": "Cast On — make a new stitch on your needle"}]
         }
       ],
       "progress": { "type": "rows", "target": 20, "label": "rows" }
@@ -387,12 +386,13 @@ Return ONLY valid JSON:
   ]
 }
 
+Omit "highlight" only if the instruction has no specific row/round pattern notation.
 For progress.type use: "rows", "rounds", "stitches", or "none"
 For type use: cast-on, ribbing, stockinette, increases, decreases, short-rows, cables, shaping, colorwork, finishing, setup
 
 Pattern (${text.length} chars total${text.length > 24000 ? ', truncated to 24000' : ''}):
 ${text.slice(0, 24000)}`,
-    'You are an expert knitting guide creator. Every instruction must be accurate — this is safety-critical for the user\'s project. Return ONLY valid JSON.'
+    'You are an expert knitting guide creator writing for beginners. Every instruction must be accurate and easy to understand. Return ONLY valid JSON.'
   );
   const guide = parseAIJson(raw);
   if (!guide?.sections) return null;
@@ -409,9 +409,9 @@ async function runPhase2Continue(text, existingSections) {
   const lastTitle = existingSections[existingSections.length - 1]?.title || 'unknown';
   const sectionCount = existingSections.length;
   const raw = await callAI(
-    `A knitting guide has already been generated with ${sectionCount} sections, ending at "${lastTitle}". The pattern has MORE sections after this point that were not captured.
+    `A knitting guide has already been generated with ${sectionCount} sections, ending at "${lastTitle}". The pattern has MORE sections after this point.
 
-Continue the guide from AFTER "${lastTitle}". Extract every remaining section. Use the same JSON format as before.
+Continue from AFTER "${lastTitle}". Extract every remaining section — back panel, front panel, sleeves, neckline, finishing, everything. Write beginner-friendly plain English. For rows/rounds with a stitch pattern add a "highlight" field.
 
 Return ONLY valid JSON:
 {
@@ -421,13 +421,14 @@ Return ONLY valid JSON:
       "title": "Section title",
       "type": "increases",
       "badge": "Increases",
-      "description": "What this section does in 1 sentence",
+      "description": "What this section does in plain English",
       "instructions": [
         {
           "step": 1,
           "original": "exact text from pattern",
-          "plain": "plain English explanation",
-          "abbreviations": []
+          "plain": "beginner-friendly explanation",
+          "highlight": "Row 1: k2tog, k to end",
+          "abbreviations": [{"abbr": "k2tog", "meaning": "Knit 2 stitches together — makes 1 stitch from 2 (decrease)"}]
         }
       ],
       "progress": { "type": "rows", "target": 20, "label": "rows" }
@@ -710,6 +711,7 @@ function buildGuideSection(projectId, section, isActive, isLocked) {
     section.instructions.forEach(instr => {
       const li = document.createElement('li'); li.className = 'guide-instr';
       li.appendChild(el('p', 'guide-instr-plain', instr.plain));
+      if (instr.highlight) li.appendChild(el('code', 'guide-instr-highlight', instr.highlight));
       li.appendChild(el('p', 'guide-instr-original', instr.original));
       if (instr.abbreviations?.length > 0) {
         const row = document.createElement('div'); row.className = 'guide-abbr-row';
