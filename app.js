@@ -305,10 +305,16 @@ function parseAIJson(raw) {
   return null;
 }
 
-async function callAI(userContent, systemContent) {
+async function callAI(userContent, systemContent, maxTokens) {
   const key = localStorage.getItem('orApiKey');
   if (!key) return null;
   try {
+    const body = {
+      model: localStorage.getItem('orModel') || 'google/gemini-2.5-flash',
+      messages: [{ role: 'system', content: systemContent }, { role: 'user', content: userContent }],
+      temperature: 0.1
+    };
+    if (maxTokens) body.max_tokens = maxTokens;
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -317,11 +323,7 @@ async function callAI(userContent, systemContent) {
         'HTTP-Referer': 'https://ef-erraticpatterns.github.io/Knit-Assistant',
         'X-Title': 'Knit Assistant'
       },
-      body: JSON.stringify({
-        model: localStorage.getItem('orModel') || 'google/gemini-2.5-flash',
-        messages: [{ role: 'system', content: systemContent }, { role: 'user', content: userContent }],
-        temperature: 0.1
-      })
+      body: JSON.stringify(body)
     });
     if (!res.ok) return null;
     const d = await res.json();
@@ -392,7 +394,8 @@ For type use: cast-on, ribbing, stockinette, increases, decreases, short-rows, c
 
 Pattern (${text.length} chars total${text.length > 24000 ? ', truncated to 24000' : ''}):
 ${text.slice(0, 24000)}`,
-    'You are an expert knitting guide creator writing for beginners. Every instruction must be accurate and easy to understand. Return ONLY valid JSON.'
+    'You are an expert knitting guide creator writing for beginners. Every instruction must be accurate and easy to understand. Return ONLY valid JSON.',
+    16000
   );
   const guide = parseAIJson(raw);
   if (!guide?.sections) return null;
@@ -438,7 +441,8 @@ Return ONLY valid JSON:
 
 Full pattern text:
 ${text.slice(0, 24000)}`,
-    'You are an expert knitting guide creator. Return ONLY valid JSON with the remaining sections.'
+    'You are an expert knitting guide creator. Return ONLY valid JSON with the remaining sections.',
+    16000
   );
   const result = parseAIJson(raw);
   if (!result?.sections?.length) return null;
