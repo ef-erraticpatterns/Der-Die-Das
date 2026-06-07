@@ -909,6 +909,7 @@ body.fb-picking * { cursor: crosshair !important; }
 .guide-card-body.collapsed { display: none; }
 
 .guide-section-desc { font-size: .83rem; color: var(--text-muted); line-height: 1.5; }
+.guide-mark-done-btn { margin-top: 8px; }
 
 /* Instructions list */
 .guide-instructions { padding-left: 18px; display: flex; flex-direction: column; gap: 14px; margin: 0; }

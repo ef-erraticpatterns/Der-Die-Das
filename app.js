@@ -682,6 +682,22 @@ function buildGuideSection(projectId, section, isActive, isLocked) {
     body.appendChild(ps);
   }
 
+  // Mark done button — prominent, at bottom of active section
+  if (isActive && !section.isComplete) {
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'btn primary full-width guide-mark-done-btn';
+    doneBtn.textContent = '✓ Mark this section done';
+    doneBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const p = getProject(projectId);
+      const s = p?.guide?.sections.find(s => s.id === section.id);
+      if (!s) return;
+      s.isComplete = true;
+      save(state); renderProject();
+    });
+    body.appendChild(doneBtn);
+  }
+
   head.addEventListener('click', () => { if (!isLocked) body.classList.toggle('collapsed'); });
   card.appendChild(body);
   return card;
@@ -700,6 +716,19 @@ function updateSectionProgress(projectId, sectionId, delta) {
   if (valEl)  valEl.textContent  = `${s.currentProgress} / ${s.progress.target} ${label}`;
   if (miniEl) miniEl.textContent = `${s.currentProgress} / ${s.progress.target} ${label}`;
   if (fillEl) fillEl.style.width = Math.round(s.currentProgress / s.progress.target * 100) + '%';
+
+  // Auto-complete prompt when counter reaches target
+  if (s.currentProgress >= s.progress.target && !s.isComplete) {
+    setTimeout(() => {
+      const confirmed = confirm(`You've reached ${s.progress.target} ${label}!\n\nDo you have ${s.progress.target} ${label} on your needles?`);
+      if (confirmed) {
+        s.isComplete = true;
+        save(state); renderProject();
+      } else {
+        alert(`Don't worry — count your stitches from the beginning of this section. A missed yarn over or extra decrease is the most common cause. You can also ask the AI Chat tab to help you troubleshoot.`);
+      }
+    }, 100);
+  }
 }
 
 // ── Glossary data ─────────────────────────────────────────────────────────────
