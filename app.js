@@ -352,106 +352,108 @@ ${text.slice(0, 5000)}`,
   return parseAIJson(raw);
 }
 
-async function runPhase2(text, meta, answers) {
-  const answerStr = Object.entries(answers).map(([k, v]) => `${k}: ${v}`).join(', ') || 'no choices needed';
+// Pass A: read the full pattern and return ONLY the section plan (titles, types, row targets).
+// Tiny output — never truncated.
+async function runPhase2Plan(text, meta, answers) {
+  const answerStr = Object.entries(answers).map(([k,v]) => `${k}: ${v}`).join(', ') || 'no choices needed';
   const raw = await callAI(
-    `Create a complete beginner-friendly step-by-step knitting guide. User choices: ${answerStr}.
+    `Read this knitting pattern completely. User size choices: ${answerStr}.
 
-CRITICAL RULES:
-1. Extract EVERY section — gauge, cast-on, all body sections, front/back panels, sleeves, neckline, finishing. A garment pattern typically has 8-20 sections. Do NOT stop early.
-2. Write for a BEGINNER. Every instruction must be explained in simple plain English. Assume the knitter knows basic knit/purl but nothing else.
-3. For every row or round that has a specific stitch pattern, add a "highlight" field with the exact pattern notation (e.g. "Row 1 (RS): s2, k1, m1lyb, k to end").
-4. Keep the original text verbatim in "original". Write a friendly plain-English version in "plain".
+List EVERY section from start to bind-off in order. Include gauge, cast-on, every body section, front/back/sleeve panels, neckline, finishing — everything. Do not skip any section.
 
 Return ONLY valid JSON:
 {
   "patternName": "name",
   "sizeChosen": "chosen size or One Size",
   "sections": [
-    {
-      "id": "s1",
-      "title": "Section title",
-      "type": "cast-on",
-      "badge": "Cast On",
-      "description": "What this section achieves in plain English (1 sentence, beginner-friendly)",
-      "instructions": [
-        {
-          "step": 1,
-          "original": "exact text from pattern",
-          "plain": "friendly plain-English explanation for a beginner",
-          "highlight": "Row 1: k2, p2 repeat to end",
-          "abbreviations": [{"abbr": "CO", "meaning": "Cast On — make a new stitch on your needle"}]
-        }
-      ],
-      "progress": { "type": "rows", "target": 20, "label": "rows" }
-    }
+    { "id": "s1", "title": "Gauge Swatch", "type": "setup", "badge": "Gauge",
+      "description": "One plain-English sentence describing what this section does.",
+      "progress": { "type": "rows", "target": 4, "label": "rows" } }
   ]
 }
 
-Omit "highlight" only if the instruction has no specific row/round pattern notation.
-For progress.type use: "rows", "rounds", "stitches", or "none"
-For type use: cast-on, ribbing, stockinette, increases, decreases, short-rows, cables, shaping, colorwork, finishing, setup
+No "instructions" field yet — just the section list.
+For progress.type: "rows", "rounds", "stitches", or "none".
+For type: cast-on, ribbing, stockinette, increases, decreases, short-rows, cables, shaping, colorwork, finishing, setup.
 
-Pattern (${text.length} chars total${text.length > 24000 ? ', truncated to 24000' : ''}):
+Pattern:
 ${text.slice(0, 24000)}`,
-    'You are an expert knitting guide creator writing for beginners. Every instruction must be accurate and easy to understand. Return ONLY valid JSON.',
-    16000
+    'You are an expert knitting pattern analyst. Return ONLY valid JSON with the complete section list.'
   );
-  const guide = parseAIJson(raw);
-  if (!guide?.sections) return null;
-  guide.sections = guide.sections.map((s, i) => ({
+  const plan = parseAIJson(raw);
+  if (!plan?.sections?.length) return null;
+  plan.sections = plan.sections.map((s, i) => ({
     ...s,
     id: s.id || `s${i}`,
+    instructions: [],
     currentProgress: 0,
-    isComplete: false
+    isComplete: false,
+    _loading: true   // flag: instructions not yet generated
   }));
-  return guide;
+  return plan;
 }
 
-async function runPhase2Continue(text, existingSections) {
-  const lastTitle = existingSections[existingSections.length - 1]?.title || 'unknown';
-  const sectionCount = existingSections.length;
+// Pass B: fill one section's instructions. Called once per section after the plan is shown.
+async function runPhase2Section(text, section) {
   const raw = await callAI(
-    `A knitting guide has already been generated with ${sectionCount} sections, ending at "${lastTitle}". The pattern has MORE sections after this point.
+    `Fill in the step-by-step instructions for this section of a knitting pattern.
 
-Continue from AFTER "${lastTitle}". Extract every remaining section — back panel, front panel, sleeves, neckline, finishing, everything. Write beginner-friendly plain English. For rows/rounds with a stitch pattern add a "highlight" field.
+Section: "${section.title}" (${section.type})
 
-Return ONLY valid JSON:
+Rules:
+- Write for a BEGINNER. Plain English for every instruction.
+- For every row or round with a stitch pattern, add a "highlight" with the exact notation (e.g. "Row 1: k2, p2 to end").
+- Keep exact original text in "original". Write a friendly version in "plain".
+- Include every abbreviation used with a clear beginner explanation.
+
+Return ONLY valid JSON for this one section (same shape as before):
 {
-  "sections": [
+  "instructions": [
     {
-      "id": "s_cont_1",
-      "title": "Section title",
-      "type": "increases",
-      "badge": "Increases",
-      "description": "What this section does in plain English",
-      "instructions": [
-        {
-          "step": 1,
-          "original": "exact text from pattern",
-          "plain": "beginner-friendly explanation",
-          "highlight": "Row 1: k2tog, k to end",
-          "abbreviations": [{"abbr": "k2tog", "meaning": "Knit 2 stitches together — makes 1 stitch from 2 (decrease)"}]
-        }
-      ],
-      "progress": { "type": "rows", "target": 20, "label": "rows" }
+      "step": 1,
+      "original": "exact text from pattern",
+      "plain": "friendly plain-English for a beginner",
+      "highlight": "Row 1: k2, p2 repeat to end",
+      "abbreviations": [{"abbr": "k2", "meaning": "Knit 2 stitches — insert needle, wrap yarn, pull through"}]
     }
   ]
 }
 
-Full pattern text:
+Omit "highlight" only if the instruction has no specific stitch pattern notation.
+
+Full pattern text (find the "${section.title}" section and extract its instructions):
 ${text.slice(0, 24000)}`,
-    'You are an expert knitting guide creator. Return ONLY valid JSON with the remaining sections.',
-    16000
+    'You are an expert knitting guide creator writing for beginners. Return ONLY valid JSON.',
+    4000
   );
   const result = parseAIJson(raw);
-  if (!result?.sections?.length) return null;
-  return result.sections.map((s, i) => ({
-    ...s,
-    id: s.id || `s_cont_${i}`,
-    currentProgress: 0,
-    isComplete: false
-  }));
+  return result?.instructions || [];
+}
+
+// Orchestrate plan + per-section fill. Calls onSectionReady(updatedProject) after each section.
+async function runPhase2(text, meta, answers, projectId, onSectionReady) {
+  const plan = await runPhase2Plan(text, meta, answers);
+  if (!plan) return null;
+
+  // Save plan immediately so sections are visible right away
+  const p = getProject(projectId);
+  if (!p) return null;
+  p.guide = plan;
+  p.patternText = text;
+  save(state);
+  if (onSectionReady) onSectionReady();
+
+  // Fill each section one by one
+  for (let i = 0; i < plan.sections.length; i++) {
+    const s = plan.sections[i];
+    const instructions = await runPhase2Section(text, s);
+    s.instructions = instructions;
+    s._loading = false;
+    save(state);
+    if (onSectionReady) onSectionReady();
+  }
+
+  return plan;
 }
 
 // ── Wizard ────────────────────────────────────────────────────────────────────
@@ -568,16 +570,21 @@ function showWizardStep(step, data) {
     genBtn.className = 'btn primary wizard-gen-btn'; genBtn.textContent = '✨ Build My Guide';
     genBtn.addEventListener('click', async () => {
       showWizardStep('generating');
-      const guide = await runPhase2(wizardPatternText, wizardMeta, answers);
-      if (!guide) { showWizardStep('error', 'Could not generate the guide. Try again or use a more capable AI model.'); return; }
-      const p = getProject(wizardProjectId);
-      if (p) {
-        p.guide = guide;
-        p.pdfData = null; p.patternAnalysis = null;
-        // Keep patternText so we can generate more sections if the pattern was truncated
-        save(state);
+      const pid = wizardProjectId;
+      const patText = wizardPatternText;
+      const metaSnap = wizardMeta;
+      const answersSnap = { ...answers };
+      closeWizard();
+      render(); // show project view while sections load in background
+      const guide = await runPhase2(patText, metaSnap, answersSnap, pid, () => {
+        const proj = getProject(pid);
+        if (proj && state.activeId === pid) renderProject();
+      });
+      if (!guide) {
+        const proj = getProject(pid);
+        if (proj) { proj.guide = null; save(state); renderProject(); }
+        alert('Could not generate the guide. Check your OpenRouter key in the AI Chat tab and try again.');
       }
-      closeWizard(); render();
     });
     body.appendChild(genBtn);
 
@@ -634,31 +641,19 @@ function renderGuideInto(p, container) {
   container.appendChild(progWrap);
 
   // Section cards — sequential: active = first incomplete, locked = anything after it
+  const anyLoading = guide.sections.some(s => s._loading);
   const firstIncompleteIdx = guide.sections.findIndex(s => !s.isComplete);
   guide.sections.forEach((section, i) => {
-    const isActive = i === firstIncompleteIdx;
-    const isLocked = firstIncompleteIdx !== -1 && i > firstIncompleteIdx;
+    const isActive = !anyLoading && i === firstIncompleteIdx;
+    const isLocked = !anyLoading && firstIncompleteIdx !== -1 && i > firstIncompleteIdx;
     container.appendChild(buildGuideSection(p.id, section, isActive, isLocked));
   });
 
-  // "Generate more sections" — shown when patternText is still stored
-  if (p.patternText) {
-    const moreBtn = document.createElement('button');
-    moreBtn.className = 'btn secondary full-width';
-    moreBtn.textContent = '⟳ Generate missing sections';
-    moreBtn.style.marginTop = '8px';
-    moreBtn.addEventListener('click', async () => {
-      moreBtn.disabled = true; moreBtn.textContent = 'Generating… (this may take a minute)';
-      const newSections = await runPhase2Continue(p.patternText, p.guide.sections);
-      if (!newSections?.length) {
-        moreBtn.disabled = false; moreBtn.textContent = '⟳ Generate missing sections';
-        alert('Could not find more sections. Your guide may already be complete, or try the AI Chat to ask about the missing steps.');
-        return;
-      }
-      p.guide.sections.push(...newSections);
-      save(state); renderProject();
-    });
-    container.appendChild(moreBtn);
+  if (anyLoading) {
+    const loadNote = el('div', '', '');
+    loadNote.style.cssText = 'text-align:center;font-size:.8rem;color:var(--text-muted);margin-top:8px;';
+    loadNote.textContent = '⟳ Filling in instructions… sections will appear as they load';
+    container.appendChild(loadNote);
   }
 }
 
@@ -708,6 +703,11 @@ function buildGuideSection(projectId, section, isActive, isLocked) {
   body.className = `guide-card-body${startCollapsed ? ' collapsed' : ''}`;
 
   if (section.description) body.appendChild(el('p', 'guide-section-desc', section.description));
+
+  if (section._loading) {
+    const shimmer = el('div', 'guide-loading-shimmer', 'Loading instructions…');
+    body.appendChild(shimmer);
+  }
 
   // Instructions
   if (section.instructions?.length > 0) {

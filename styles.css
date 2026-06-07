@@ -910,6 +910,12 @@ body.fb-picking * { cursor: crosshair !important; }
 
 .guide-section-desc { font-size: .83rem; color: var(--text-muted); line-height: 1.5; }
 .guide-mark-done-btn { margin-top: 8px; }
+.guide-loading-shimmer {
+  font-size: .8rem; color: var(--text-muted); font-style: italic;
+  padding: 6px 0; opacity: 0.7;
+  animation: shimmer-pulse 1.4s ease-in-out infinite;
+}
+@keyframes shimmer-pulse { 0%,100%{opacity:.4} 50%{opacity:.9} }
 .guide-instr-highlight {
   display: block; margin: 4px 0 6px;
   background: rgba(105,64,165,0.12); color: #6940a5;
