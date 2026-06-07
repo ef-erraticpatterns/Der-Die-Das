@@ -405,6 +405,50 @@ ${text.slice(0, 24000)}`,
   return guide;
 }
 
+async function runPhase2Continue(text, existingSections) {
+  const lastTitle = existingSections[existingSections.length - 1]?.title || 'unknown';
+  const sectionCount = existingSections.length;
+  const raw = await callAI(
+    `A knitting guide has already been generated with ${sectionCount} sections, ending at "${lastTitle}". The pattern has MORE sections after this point that were not captured.
+
+Continue the guide from AFTER "${lastTitle}". Extract every remaining section. Use the same JSON format as before.
+
+Return ONLY valid JSON:
+{
+  "sections": [
+    {
+      "id": "s_cont_1",
+      "title": "Section title",
+      "type": "increases",
+      "badge": "Increases",
+      "description": "What this section does in 1 sentence",
+      "instructions": [
+        {
+          "step": 1,
+          "original": "exact text from pattern",
+          "plain": "plain English explanation",
+          "abbreviations": []
+        }
+      ],
+      "progress": { "type": "rows", "target": 20, "label": "rows" }
+    }
+  ]
+}
+
+Full pattern text:
+${text.slice(0, 24000)}`,
+    'You are an expert knitting guide creator. Return ONLY valid JSON with the remaining sections.'
+  );
+  const result = parseAIJson(raw);
+  if (!result?.sections?.length) return null;
+  return result.sections.map((s, i) => ({
+    ...s,
+    id: s.id || `s_cont_${i}`,
+    currentProgress: 0,
+    isComplete: false
+  }));
+}
+
 // ── Wizard ────────────────────────────────────────────────────────────────────
 
 function openWizard(projectId) {
@@ -524,7 +568,8 @@ function showWizardStep(step, data) {
       const p = getProject(wizardProjectId);
       if (p) {
         p.guide = guide;
-        p.pdfData = null; p.patternText = null; p.patternAnalysis = null;
+        p.pdfData = null; p.patternAnalysis = null;
+        // Keep patternText so we can generate more sections if the pattern was truncated
         save(state);
       }
       closeWizard(); render();
@@ -590,6 +635,26 @@ function renderGuideInto(p, container) {
     const isLocked = firstIncompleteIdx !== -1 && i > firstIncompleteIdx;
     container.appendChild(buildGuideSection(p.id, section, isActive, isLocked));
   });
+
+  // "Generate more sections" — shown when patternText is still stored
+  if (p.patternText) {
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'btn secondary full-width';
+    moreBtn.textContent = '⟳ Generate missing sections';
+    moreBtn.style.marginTop = '8px';
+    moreBtn.addEventListener('click', async () => {
+      moreBtn.disabled = true; moreBtn.textContent = 'Generating… (this may take a minute)';
+      const newSections = await runPhase2Continue(p.patternText, p.guide.sections);
+      if (!newSections?.length) {
+        moreBtn.disabled = false; moreBtn.textContent = '⟳ Generate missing sections';
+        alert('Could not find more sections. Your guide may already be complete, or try the AI Chat to ask about the missing steps.');
+        return;
+      }
+      p.guide.sections.push(...newSections);
+      save(state); renderProject();
+    });
+    container.appendChild(moreBtn);
+  }
 }
 
 function buildGuideSection(projectId, section, isActive, isLocked) {
