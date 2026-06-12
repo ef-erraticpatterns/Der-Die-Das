@@ -1,14 +1,27 @@
 {
-  "name": "Knit Assistant",
-  "short_name": "Knit",
-  "description": "Track your knitting projects, patterns, and row counts",
+  "name": "Artikel Trainer",
+  "short_name": "Artikel",
+  "description": "Learn German articles der, die, das across all four cases",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a0f2e",
-  "theme_color": "#2d1b4e",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
   "orientation": "portrait",
+  "lang": "de",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-green-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-yellow-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-red-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }
+  ],
+  "categories": ["education", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Übung starten / Start Practice",
+      "short_name": "Üben",
+      "url": "/?screen=practice",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
