@@ -9,11 +9,11 @@
   --das-bg: rgba(255, 209, 102, 0.15);
 
   /* UI colors */
-  --bg: #1a1a2e;
-  --surface: #16213e;
-  --surface-2: #0f3460;
-  --surface-3: #1e2a4a;
-  --border: rgba(255,255,255,0.1);
+  --bg: #08090d;
+  --surface: #0f1117;
+  --surface-2: #181c27;
+  --surface-3: #1e2330;
+  --border: rgba(255,255,255,0.12);
   --accent: #06d6a0;
   --accent-bg: rgba(6, 214, 160, 0.15);
   --error: #ef476f;
