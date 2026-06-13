@@ -169,7 +169,7 @@ const App = (() => {
     // Progress ring
     const ring = document.querySelector('.hero-ring svg .ring-fill');
     if (ring) {
-      const r = 78; // radius (should match SVG)
+      const r = 58; // radius (should match SVG)
       const circ = 2 * Math.PI * r;
       ring.style.strokeDasharray = circ;
       ring.style.strokeDashoffset = circ * (1 - Math.min(pct, 1));
@@ -198,15 +198,12 @@ const App = (() => {
     }
 
     // Stat chips
-    const streakChip = document.querySelector('.stat-chip.streak');
-    if (streakChip) streakChip.innerHTML = `<span class="chip-icon">🔥</span>${state.user.currentStreak} ${state.user.currentStreak === 1 ? 'Tag' : 'Tage'}`;
-    const xpChip = document.querySelector('.stat-chip.xp');
-    if (xpChip) xpChip.innerHTML = `<span class="chip-icon">⭐</span>${Utils.formatNumber(state.user.xp)} XP`;
-    const levelChip = document.querySelector('.stat-chip.level');
-    if (levelChip) {
-      const lvl = Utils.getLevel(state.user.xp);
-      levelChip.innerHTML = `<span class="chip-icon">🎓</span>${lvl.name}`;
-    }
+    const streakSpan = document.getElementById('chip-streak');
+    if (streakSpan) streakSpan.textContent = `${state.user.currentStreak} ${state.user.currentStreak === 1 ? 'Tag' : 'Tage'}`;
+    const xpSpan = document.getElementById('chip-xp');
+    if (xpSpan) xpSpan.textContent = Utils.formatNumber(state.user.xp) + ' XP';
+    const levelSpan = document.getElementById('chip-level');
+    if (levelSpan) levelSpan.textContent = Utils.getLevel(state.user.xp).name;
 
     // Today stats
     const tc = document.getElementById('today-correct');
@@ -218,13 +215,6 @@ const App = (() => {
       ? Utils.pct(state.today.correctAnswers, state.today.wordsCompleted)
       : 0;
     if (ta) ta.textContent = acc + '%';
-
-    // Badge strip
-    renderBadgeStrip();
-
-    // Encouragement
-    const msg = document.querySelector('.encourage-msg');
-    if (msg) msg.textContent = Gamification.randomEncouragement();
 
     // Notification banner
     Notifications.showBanner(state);

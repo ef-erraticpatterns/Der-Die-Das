@@ -54,20 +54,20 @@
       <button id="btn-dismiss-notif">✕</button>
     </div>
 
-    <!-- Preview word card -->
+    <!-- Preview word card (tap to start practice) -->
     <div id="preview-card" class="preview-word-card">
       <div class="preview-case-chip" id="preview-case">Nominativ · Nominative</div>
       <div class="preview-noun" id="preview-noun">Welt</div>
-      <div class="preview-hint">Tippe zum Üben · Tap to practice</div>
+      <div class="preview-hint">Tippe zum Üben · Tap to practice ›</div>
     </div>
 
-    <!-- Hero progress ring -->
-    <div class="hero-ring-wrap">
+    <!-- Ring + chips side by side -->
+    <div class="home-middle-row">
       <div class="hero-ring">
-        <svg viewBox="0 0 180 180">
-          <circle class="ring-bg" cx="90" cy="90" r="78" />
-          <circle class="ring-fill" cx="90" cy="90" r="78"
-            stroke-dasharray="490" stroke-dashoffset="490" />
+        <svg viewBox="0 0 140 140">
+          <circle class="ring-bg" cx="70" cy="70" r="58" />
+          <circle class="ring-fill" cx="70" cy="70" r="58"
+            stroke-dasharray="365" stroke-dashoffset="365" />
         </svg>
         <div class="hero-ring-center">
           <span class="ring-count">0</span>
@@ -75,21 +75,11 @@
           <span class="ring-label">heute · today</span>
         </div>
       </div>
-    </div>
-
-    <!-- Streak / XP / Level chips -->
-    <div class="stat-chips">
-      <div class="stat-chip streak"><span class="chip-icon">🔥</span>0 Tage</div>
-      <div class="stat-chip xp"><span class="chip-icon">⭐</span>0 XP</div>
-      <div class="stat-chip level"><span class="chip-icon">🎓</span>Anfänger</div>
-    </div>
-
-    <!-- CTA Button -->
-    <div class="cta-wrap">
-      <button id="btn-start-practice" class="btn-cta">
-        Übung starten · Start Practice
-        <span class="cta-sub">Täglich 20 Wörter · 20 words daily</span>
-      </button>
+      <div class="home-chips-stack">
+        <div class="stat-chip streak"><span class="chip-icon">🔥</span><span id="chip-streak">0 Tage</span></div>
+        <div class="stat-chip level"><span class="chip-icon">🎓</span><span id="chip-level">Anfänger</span></div>
+        <div class="stat-chip xp"><span class="chip-icon">⭐</span><span id="chip-xp">0 XP</span></div>
+      </div>
     </div>
 
     <!-- Today's stats -->
@@ -111,43 +101,22 @@
       </div>
     </div>
 
-    <!-- Quick action grid -->
+    <!-- Quick action grid (2 cards) -->
     <div class="quick-grid">
       <div class="quick-card" data-screen="dict">
         <div class="qc-icon">📖</div>
         <div class="qc-name">Wörterbuch</div>
-        <div class="qc-sub">Dictionary · 120+ words</div>
+        <div class="qc-sub">Dictionary · 1000+ words</div>
       </div>
       <div class="quick-card" data-screen="grammar">
         <div class="qc-icon">📐</div>
         <div class="qc-name">Artikel-Regeln</div>
         <div class="qc-sub">Grammar rules</div>
       </div>
-      <div class="quick-card" data-screen="stats">
-        <div class="qc-icon">📊</div>
-        <div class="qc-name">Statistiken</div>
-        <div class="qc-sub">Your progress</div>
-      </div>
-      <div class="quick-card" data-screen="grammar">
-        <div class="qc-icon">📝</div>
-        <div class="qc-name">Grammatik</div>
-        <div class="qc-sub">Grammar rules</div>
-      </div>
     </div>
 
-    <!-- Badge strip -->
-    <div class="badge-strip-wrap">
-      <div class="badge-strip-title">Abzeichen · Badges</div>
-      <div class="badge-strip">
-        <div class="badge-chip"><div class="badge-icon-wrap">🎯</div><div class="badge-name">Erster Schritt</div></div>
-        <div class="badge-chip"><div class="badge-icon-wrap">🔥</div><div class="badge-name">3 Tage</div></div>
-        <div class="badge-chip"><div class="badge-icon-wrap">⭐</div><div class="badge-name">Perfekter Tag</div></div>
-        <div class="badge-chip"><div class="badge-icon-wrap">📚</div><div class="badge-name">100 Wörter</div></div>
-      </div>
-    </div>
-
-    <!-- Encouragement -->
-    <div class="encourage-msg">Du schaffst das! 💪</div>
+    <!-- hidden start button still needed for JS -->
+    <button id="btn-start-practice" style="display:none"></button>
 
   </section>
 
