@@ -14,32 +14,31 @@ const Practice = (() => {
     genitive:   { de: 'Genitiv',   en: 'Genitive (Possession)' }
   };
 
-  /* ── DOM refs ── */
   const els = () => ({
-    screen:       document.getElementById('screen-practice'),
-    progressFill: document.getElementById('practice-prog-fill'),
-    progressText: document.getElementById('practice-prog-text'),
-    xpDisplay:    document.getElementById('practice-xp'),
-    caseChip:     document.getElementById('q-case-chip'),
-    noun:         document.getElementById('q-noun'),
-    plural:       document.getElementById('q-plural'),
-    sentence:     document.getElementById('q-sentence'),
-    card:         document.getElementById('question-card'),
-    tipCard:      document.getElementById('tip-card'),
-    tipRule:      document.getElementById('tip-rule'),
-    tipEn:        document.getElementById('tip-en'),
-    derBtn:       document.getElementById('btn-der'),
-    dieBtn:       document.getElementById('btn-die'),
-    dasBtn:       document.getElementById('btn-das'),
-    continueBtn:  document.getElementById('btn-continue'),
+    screen:         document.getElementById('screen-practice'),
+    progressFill:   document.getElementById('practice-prog-fill'),
+    progressText:   document.getElementById('practice-prog-text'),
+    xpDisplay:      document.getElementById('practice-xp'),
+    caseChip:       document.getElementById('q-case-chip'),
+    noun:           document.getElementById('q-noun'),
+    plural:         document.getElementById('q-plural'),
+    sentence:       document.getElementById('q-sentence'),
+    card:           document.getElementById('question-card'),
+    tipCard:        document.getElementById('tip-card'),
+    tipRule:        document.getElementById('tip-rule'),
+    tipEn:          document.getElementById('tip-en'),
+    derBtn:         document.getElementById('btn-der'),
+    dieBtn:         document.getElementById('btn-die'),
+    dasBtn:         document.getElementById('btn-das'),
+    continueBtn:    document.getElementById('btn-continue'),
     completeScreen: document.getElementById('session-complete'),
     completeEmoji:  document.getElementById('session-emoji'),
     completeTitle:  document.getElementById('session-title'),
     completeSub:    document.getElementById('session-sub'),
-    ssCorrect:    document.getElementById('ss-correct'),
-    ssWrong:      document.getElementById('ss-wrong'),
-    ssXP:         document.getElementById('ss-xp'),
-    confettiWrap: document.getElementById('confetti-wrap')
+    ssCorrect:      document.getElementById('ss-correct'),
+    ssWrong:        document.getElementById('ss-wrong'),
+    ssXP:           document.getElementById('ss-xp'),
+    confettiWrap:   document.getElementById('confetti-wrap')
   });
 
   /* ── Start session ── */
@@ -50,7 +49,7 @@ const Practice = (() => {
       date: Utils.todayISO(),
       startedAt: new Date().toISOString(),
       endedAt: null,
-      queue: words,   // [{word, cas}]
+      queue: words,
       index: 0,
       correct: 0,
       wrong: 0,
@@ -59,6 +58,7 @@ const Practice = (() => {
       wordsDetail: []
     };
     speedStreak = 0;
+    answered = false;
 
     document.body.classList.add('practice-mode');
     e.completeScreen.classList.add('hidden');
@@ -66,66 +66,60 @@ const Practice = (() => {
     showQuestion();
   }
 
+  /* ── Card flip ── */
+  function flipCard(callback) {
+    const e = els();
+    e.card.classList.add('flip-out');
+    setTimeout(() => {
+      callback();
+      e.card.classList.remove('flip-out');
+      void e.card.offsetWidth; // force reflow so animation restarts
+      e.card.classList.add('flip-in');
+      setTimeout(() => e.card.classList.remove('flip-in'), 350);
+    }, 200);
+  }
+
   /* ── Show question ── */
   function showQuestion() {
     const e = els();
     if (session.index >= session.queue.length) { endSession(); return; }
 
-    currentItem = session.queue[session.index];
-    answered = false;
-    questionStartTime = Date.now();
+    flipCard(() => {
+      currentItem = session.queue[session.index];
+      answered = false;
+      questionStartTime = Date.now();
 
-    const { word, cas } = currentItem;
-    const caseData = word.cases[cas] || word.cases.nominative;
-    const label = CASE_LABELS[cas] || CASE_LABELS.nominative;
+      const { word, cas } = currentItem;
+      const label = CASE_LABELS[cas] || CASE_LABELS.nominative;
 
-    // Reset card state
-    e.card.className = 'question-card';
-    e.tipCard.classList.add('hidden');
-    e.continueBtn.classList.remove('show');
-    [e.derBtn, e.dieBtn, e.dasBtn].forEach(btn => {
-      btn.className = btn.className.split(' ').filter(c => !['selected-correct','selected-wrong','disabled'].includes(c)).join(' ');
-    });
+      e.card.className = 'question-card';
+      e.tipCard.classList.add('hidden');
+      e.continueBtn.classList.remove('show');
 
-    // Case chip
-    e.caseChip.textContent = `${label.de} · ${label.en}`;
-
-    // Noun
-    e.noun.textContent = word.noun;
-
-    // Plural
-    e.plural.textContent = word.plural ? `Pl: ${word.plural}` : '';
-
-    // Sentence with blank
-    const example = (word.examples && word.examples.length > 0)
-      ? word.examples[Math.floor(Math.random() * word.examples.length)]
-      : '';
-    if (example) {
-      const articleForms = ['der','die','das','den','dem','des'];
-      let sentHtml = example;
-      for (const art of articleForms) {
-        sentHtml = sentHtml.replace(
-          new RegExp(`\\b${art}\\b`, 'i'),
-          (match) => `<span class="blank">${match[0].toUpperCase() === match[0] ? '___' : '___'}</span>`
-        );
-        break;
-      }
-      e.sentence.innerHTML = sentHtml;
-      e.sentence.style.display = '';
-    } else {
+      // Sentence hidden before answer
       e.sentence.style.display = 'none';
-    }
+      e.sentence.style.borderLeft = '';
+      e.sentence.style.color = '';
+      e.sentence.style.background = '';
+      e.sentence.textContent = '';
 
-    // Update progress
-    updateProgress();
+      [e.derBtn, e.dieBtn, e.dasBtn].forEach(btn => {
+        btn.classList.remove('selected-correct', 'selected-wrong', 'disabled');
+      });
+
+      e.caseChip.textContent = `${label.de} · ${label.en}`;
+      e.noun.textContent = word.noun;
+      e.plural.textContent = word.plural ? `Pl: ${word.plural}` : '';
+
+      updateProgress();
+    });
   }
 
   function updateProgress() {
     const e = els();
     const total = session.queue.length;
     const done = session.index;
-    const pctVal = total > 0 ? (done / total) * 100 : 0;
-    e.progressFill.style.width = pctVal + '%';
+    e.progressFill.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
     e.progressText.textContent = `${done} / ${total}`;
     e.xpDisplay.textContent = session.xpEarned + ' XP';
   }
@@ -144,18 +138,10 @@ const Practice = (() => {
 
     // Visual feedback on buttons
     const btnMap = { der: e.derBtn, die: e.dieBtn, das: e.dasBtn };
-    const chosenBtn = btnMap[chosenArticle];
-    const correctBtn = btnMap[correctArticle];
-
-    if (wasCorrect) {
-      chosenBtn.classList.add('selected-correct');
-    } else {
-      chosenBtn.classList.add('selected-wrong');
-      correctBtn.classList.add('selected-correct');
-    }
+    btnMap[chosenArticle].classList.add(wasCorrect ? 'selected-correct' : 'selected-wrong');
+    if (!wasCorrect) btnMap[correctArticle].classList.add('selected-correct');
     Object.values(btnMap).forEach(btn => btn.classList.add('disabled'));
 
-    // Card animation
     if (wasCorrect) {
       e.card.classList.add('correct');
       speedStreak++;
@@ -163,53 +149,79 @@ const Practice = (() => {
     } else {
       e.card.classList.add('wrong');
       speedStreak = 0;
-      showTip(word, cas, correctArticle);
     }
 
-    // Update progress data
-    const progress = await Store.getWordProgress(word.id);
-    progress.errorsByCase = progress.errorsByCase || { nominative:0, accusative:0, dative:0, genitive:0 };
-    progress.errorsByArticle = progress.errorsByArticle || { der:0, die:0, das:0 };
-    if (!wasCorrect) {
-      progress.errorsByCase[cas] = (progress.errorsByCase[cas] || 0) + 1;
-      progress.errorsByArticle[chosenArticle] = (progress.errorsByArticle[chosenArticle] || 0) + 1;
-    }
-    Adaptive.updateSM2(progress, wasCorrect, responseMs);
-    await Store.setWordProgress(progress);
+    // Show sentence / tip after answer
+    showPostAnswerContent(word, cas, correctArticle, wasCorrect);
 
-    // Session tallies
-    const appState = App.getState();
-    const xp = calcXPForAnswer(wasCorrect, responseMs);
-    if (wasCorrect) {
-      session.correct++;
-      session.xpEarned += xp;
-    } else {
-      session.wrong++;
-    }
-    session.speedStreak = Math.max(session.speedStreak, speedStreak);
-    session.wordsDetail.push({ wordId: word.id, correct: wasCorrect, case: cas, timeTaken: responseMs / 1000 });
-    session.index++;
-
-    // Update app state
-    appState.today.wordsCompleted++;
-    appState.today.xpEarned += xp;
-    if (wasCorrect) appState.today.correctAnswers++;
-    else            appState.today.wrongAnswers++;
-    appState.user.totalWordsAnswered++;
-    appState.user.totalCorrect += wasCorrect ? 1 : 0;
-    appState.user.xp += xp;
-    App.setState(appState);
-
-    // Show continue button
+    // Show continue button IMMEDIATELY — before any async work so UI never freezes
+    const isLast = (session.index + 1) >= session.queue.length;
     e.continueBtn.classList.add('show');
-    e.continueBtn.textContent = session.index >= session.queue.length
-      ? 'Fertig! / Done!'
-      : 'Weiter / Continue';
+    e.continueBtn.textContent = isLast ? 'Fertig! / Done! 🎉' : 'Weiter / Continue ›';
+
+    // Persist progress — any error is non-fatal
+    try {
+      const progress = await Store.getWordProgress(word.id);
+      progress.errorsByCase = progress.errorsByCase || { nominative:0, accusative:0, dative:0, genitive:0 };
+      progress.errorsByArticle = progress.errorsByArticle || { der:0, die:0, das:0 };
+      if (!wasCorrect) {
+        progress.errorsByCase[cas] = (progress.errorsByCase[cas] || 0) + 1;
+        progress.errorsByArticle[chosenArticle] = (progress.errorsByArticle[chosenArticle] || 0) + 1;
+      }
+      Adaptive.updateSM2(progress, wasCorrect, responseMs);
+      await Store.setWordProgress(progress);
+
+      const appState = App.getState();
+      const xp = calcXPForAnswer(wasCorrect, responseMs);
+      if (wasCorrect) { session.correct++; session.xpEarned += xp; }
+      else            { session.wrong++; }
+      session.speedStreak = Math.max(session.speedStreak, speedStreak);
+      session.wordsDetail.push({ wordId: word.id, correct: wasCorrect, case: cas, timeTaken: responseMs / 1000 });
+      session.index++;
+
+      appState.today.wordsCompleted++;
+      appState.today.xpEarned += xp;
+      if (wasCorrect) appState.today.correctAnswers++;
+      else            appState.today.wrongAnswers++;
+      appState.user.totalWordsAnswered++;
+      appState.user.totalCorrect += wasCorrect ? 1 : 0;
+      appState.user.xp += xp;
+      App.setState(appState);
+      e.xpDisplay.textContent = session.xpEarned + ' XP';
+
+    } catch (err) {
+      console.warn('handleAnswer storage error (non-fatal):', err);
+      session.index++; // still advance
+    }
+  }
+
+  /* ── Post-answer content ── */
+  function showPostAnswerContent(word, cas, correctArticle, wasCorrect) {
+    const e = els();
+    const casLabel = CASE_LABELS[cas] || CASE_LABELS.nominative;
+    const example = word.examples && word.examples.length > 0 ? word.examples[0] : null;
+
+    if (wasCorrect) {
+      if (example) {
+        e.sentence.textContent = example;
+        e.sentence.style.display = '';
+        e.sentence.style.borderLeft = '3px solid var(--accent)';
+        e.sentence.style.color = 'var(--accent)';
+        e.sentence.style.background = 'rgba(6,214,160,0.08)';
+      }
+    } else {
+      e.tipCard.classList.remove('hidden');
+      e.tipRule.innerHTML = `
+        Im ${casLabel.de}: <span class="correct-answer ${correctArticle}">${correctArticle}</span> ${word.noun}
+        ${example ? `<span style="display:block;margin-top:6px;font-weight:400;font-size:0.82rem;opacity:0.8">${example}</span>` : ''}
+        ${word.tip ? `<span style="display:block;margin-top:4px;font-style:italic;font-size:0.78rem;color:var(--das);opacity:0.8">${word.tip}</span>` : ''}
+      `;
+      e.tipEn.textContent = `In the ${casLabel.en}: "${correctArticle} ${word.noun}"`;
+    }
   }
 
   function calcXPForAnswer(wasCorrect, responseMs) {
-    const appState = App.getState();
-    return Gamification.calcXP(wasCorrect, responseMs, appState.user.currentStreak, true);
+    return Gamification.calcXP(wasCorrect, responseMs, App.getState().user.currentStreak, true);
   }
 
   function floatXP(card, xp) {
@@ -221,43 +233,24 @@ const Practice = (() => {
     setTimeout(() => el.remove(), 900);
   }
 
-  function showTip(word, cas, correctArticle) {
-    const e = els();
-    e.tipCard.classList.remove('hidden');
-
-    // Build tip text from word's tip or grammar rules
-    const tip = word.tip || '';
-    const casLabel = CASE_LABELS[cas].de;
-    const articleClass = correctArticle;
-
-    e.tipRule.innerHTML = `
-      Im ${casLabel}: <span class="correct-answer ${articleClass}">${correctArticle}</span> ${word.noun}
-      ${tip ? `<br><small style="opacity:0.7;font-weight:400;">${tip}</small>` : ''}
-    `;
-    e.tipEn.textContent = `In the ${CASE_LABELS[cas].en}: "${correctArticle} ${word.noun}"`;
-  }
-
   /* ── End session ── */
   async function endSession() {
     const e = els();
     session.endedAt = new Date().toISOString();
 
-    // Save session
-    await Store.saveSession({
-      id: session.id, date: session.date,
-      startedAt: session.startedAt, endedAt: session.endedAt,
-      wordsAttempted: session.index, correct: session.correct,
-      wrong: session.wrong, xpEarned: session.xpEarned,
-      speedStreak: session.speedStreak
-    });
+    try {
+      await Store.saveSession({
+        id: session.id, date: session.date,
+        startedAt: session.startedAt, endedAt: session.endedAt,
+        wordsAttempted: session.index, correct: session.correct,
+        wrong: session.wrong, xpEarned: session.xpEarned,
+        speedStreak: session.speedStreak
+      });
+    } catch (err) { console.warn('saveSession error', err); }
 
-    // Update streak
     let appState = App.getState();
-    if (session.correct > 0) {
-      appState = Gamification.updateStreak(appState);
-    }
+    if (session.correct > 0) appState = Gamification.updateStreak(appState);
 
-    // Check goal completion
     const goalMet = appState.today.wordsCompleted >= appState.user.dailyGoal;
     if (goalMet) {
       appState.streakCalendar[Utils.todayISO()] = {
@@ -267,15 +260,10 @@ const Practice = (() => {
       };
     }
 
-    // Check badges
     const newBadges = Gamification.checkBadges(appState, session);
-    if (newBadges.length > 0) {
-      appState.badges = [...(appState.badges || []), ...newBadges];
-    }
-
+    if (newBadges.length > 0) appState.badges = [...(appState.badges || []), ...newBadges];
     App.setState(appState);
 
-    // Show complete screen
     const accuracy = session.index > 0 ? Math.round((session.correct / session.index) * 100) : 0;
     e.ssCorrect.textContent = session.correct;
     e.ssWrong.textContent = session.wrong;
@@ -298,17 +286,13 @@ const Practice = (() => {
     }
 
     e.completeScreen.classList.remove('hidden');
-
-    // Show new badge if any
-    if (newBadges.length > 0) {
-      setTimeout(() => App.showBadgeUnlock(newBadges[0].id), 1500);
-    }
+    if (newBadges.length > 0) setTimeout(() => App.showBadgeUnlock(newBadges[0].id), 1500);
   }
 
   function spawnConfetti() {
     const e = els();
     if (!e.confettiWrap) return;
-    const colors = ['#06d6a0','#ffd166','#ff6b8a','#4a9eff','#06d6a0'];
+    const colors = ['#06d6a0','#ffd166','#ff6b8a','#4a9eff'];
     for (let i = 0; i < 60; i++) {
       const p = document.createElement('div');
       p.className = 'confetti-piece';
@@ -325,22 +309,18 @@ const Practice = (() => {
   function exitSession() {
     document.body.classList.remove('practice-mode');
     session = null;
+    answered = false;
     App.showScreen('home');
     App.refreshDashboard();
   }
 
-  /* ── Confirm exit ── */
   function confirmExit() {
     App.showConfirm(
       'Übung beenden? / End session?',
       'Dein bisheriger Fortschritt wird gespeichert. · Your progress so far will be saved.',
       () => {
-        if (session && session.index > 0) {
-          session.queue = session.queue.slice(0, session.index);
-          endSession();
-        } else {
-          exitSession();
-        }
+        if (session && session.index > 0) endSession();
+        else exitSession();
       }
     );
   }
