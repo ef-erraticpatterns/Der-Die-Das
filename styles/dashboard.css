@@ -1,5 +1,54 @@
 /* ── Dashboard / Home Screen ── */
 
+/* Preview word card */
+.preview-word-card {
+  margin: 16px var(--gap) 0;
+  background: #0f1117;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.preview-word-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4a9eff, #06d6a0, #ffd166, #ff6b8a);
+}
+.preview-word-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.preview-case-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  border-radius: 20px;
+  padding: 4px 14px;
+}
+.preview-noun {
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.preview-hint {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Hero progress ring */
 .hero-ring-wrap {
   display: flex;

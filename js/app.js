@@ -125,13 +125,10 @@ const App = (() => {
 
   /* ── Dashboard ── */
   function initDashboard() {
-    document.getElementById('btn-start-practice').addEventListener('click', () => {
-      if (state.today.wordsCompleted >= state.user.dailyGoal) {
-        startPractice(); // bonus practice
-      } else {
-        startPractice();
-      }
-    });
+    document.getElementById('btn-start-practice').addEventListener('click', () => startPractice());
+
+    const previewCard = document.getElementById('preview-card');
+    if (previewCard) previewCard.addEventListener('click', () => startPractice());
 
     document.getElementById('btn-enable-notif').addEventListener('click', async () => {
       const granted = await Notifications.requestPermission();
@@ -234,6 +231,29 @@ const App = (() => {
 
     // Update badge
     Notifications.updateBadge(Math.max(0, goal - done));
+
+    // Preview word card
+    refreshPreviewCard();
+  }
+
+  function refreshPreviewCard() {
+    const card = document.getElementById('preview-card');
+    const nounEl = document.getElementById('preview-noun');
+    const caseEl = document.getElementById('preview-case');
+    if (!card || !nounEl || !caseEl) return;
+    const words = window.GermanData && window.GermanData.core;
+    if (!words || words.length === 0) return;
+    const CASES = ['nominative','accusative','dative','genitive'];
+    const CASE_LABELS = {
+      nominative: 'Nominativ · Nominative',
+      accusative: 'Akkusativ · Accusative',
+      dative:     'Dativ · Dative',
+      genitive:   'Genitiv · Genitive'
+    };
+    const word = words[Math.floor(Math.random() * Math.min(words.length, 200))];
+    const cas  = CASES[Math.floor(Math.random() * CASES.length)];
+    nounEl.textContent = word.noun;
+    caseEl.textContent = CASE_LABELS[cas];
   }
 
   function renderBadgeStrip() {

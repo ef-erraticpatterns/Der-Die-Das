@@ -127,14 +127,34 @@ body.practice-mode #app-header { display: none; }
   min-height: 56px;
   position: relative;
 }
+.nav-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
 .nav-btn .nav-icon {
   font-size: 1.4rem;
   line-height: 1;
   transition: transform 0.15s;
 }
-.nav-btn.active {
-  color: var(--accent);
-}
+
+/* Neon circle colors */
+.home-circle    { background: rgba(6,214,160,0.12);   border: 1.5px solid rgba(6,214,160,0.35);   box-shadow: 0 0 10px rgba(6,214,160,0.2); }
+.dict-circle    { background: rgba(74,158,255,0.12);  border: 1.5px solid rgba(74,158,255,0.35);  box-shadow: 0 0 10px rgba(74,158,255,0.2); }
+.stats-circle   { background: rgba(255,107,138,0.12); border: 1.5px solid rgba(255,107,138,0.35); box-shadow: 0 0 10px rgba(255,107,138,0.2); }
+.grammar-circle { background: rgba(255,209,102,0.12); border: 1.5px solid rgba(255,209,102,0.35); box-shadow: 0 0 10px rgba(255,209,102,0.2); }
+
+/* Active state — brighter glow */
+.nav-btn.active .home-circle    { background: rgba(6,214,160,0.25);   border-color: rgba(6,214,160,0.8);   box-shadow: 0 0 18px rgba(6,214,160,0.5); }
+.nav-btn.active .dict-circle    { background: rgba(74,158,255,0.25);  border-color: rgba(74,158,255,0.8);  box-shadow: 0 0 18px rgba(74,158,255,0.5); }
+.nav-btn.active .stats-circle   { background: rgba(255,107,138,0.25); border-color: rgba(255,107,138,0.8); box-shadow: 0 0 18px rgba(255,107,138,0.5); }
+.nav-btn.active .grammar-circle { background: rgba(255,209,102,0.25); border-color: rgba(255,209,102,0.8); box-shadow: 0 0 18px rgba(255,209,102,0.5); }
+
+.nav-btn.active { color: var(--text); }
 .nav-btn.active .nav-icon { transform: scale(1.1); }
 .nav-btn:active { opacity: 0.7; }
 
