@@ -135,6 +135,7 @@ const Practice = (() => {
     const correctArticle = caseData.article;
     const responseMs = Date.now() - questionStartTime;
     const wasCorrect = chosenArticle === correctArticle;
+    const xp = calcXPForAnswer(wasCorrect, responseMs);
 
     // Visual feedback on buttons
     const btnMap = { der: e.derBtn, die: e.dieBtn, das: e.dasBtn };
@@ -145,21 +146,29 @@ const Practice = (() => {
     if (wasCorrect) {
       e.card.classList.add('correct');
       speedStreak++;
-      floatXP(e.card, calcXPForAnswer(wasCorrect, responseMs));
+      floatXP(e.card, xp);
     } else {
       e.card.classList.add('wrong');
       speedStreak = 0;
     }
 
+    // Update session counts SYNCHRONOUSLY — must happen before continue is tapped
+    if (wasCorrect) { session.correct++; session.xpEarned += xp; }
+    else            { session.wrong++; }
+    session.speedStreak = Math.max(session.speedStreak, speedStreak);
+    session.wordsDetail.push({ wordId: word.id, correct: wasCorrect, case: cas, timeTaken: responseMs / 1000 });
+    session.index++; // ← moved here so Continue always shows the right next card
+
     // Show sentence / tip after answer
     showPostAnswerContent(word, cas, correctArticle, wasCorrect);
 
-    // Show continue button IMMEDIATELY — before any async work so UI never freezes
-    const isLast = (session.index + 1) >= session.queue.length;
+    // Show continue button — index already correct
+    const isLast = session.index >= session.queue.length;
     e.continueBtn.classList.add('show');
     e.continueBtn.textContent = isLast ? 'Fertig! / Done! 🎉' : 'Weiter / Continue ›';
+    e.xpDisplay.textContent = session.xpEarned + ' XP';
 
-    // Persist progress — any error is non-fatal
+    // Persist progress in background — any error is non-fatal, never blocks UI
     try {
       const progress = await Store.getWordProgress(word.id);
       progress.errorsByCase = progress.errorsByCase || { nominative:0, accusative:0, dative:0, genitive:0 };
@@ -172,13 +181,6 @@ const Practice = (() => {
       await Store.setWordProgress(progress);
 
       const appState = App.getState();
-      const xp = calcXPForAnswer(wasCorrect, responseMs);
-      if (wasCorrect) { session.correct++; session.xpEarned += xp; }
-      else            { session.wrong++; }
-      session.speedStreak = Math.max(session.speedStreak, speedStreak);
-      session.wordsDetail.push({ wordId: word.id, correct: wasCorrect, case: cas, timeTaken: responseMs / 1000 });
-      session.index++;
-
       appState.today.wordsCompleted++;
       appState.today.xpEarned += xp;
       if (wasCorrect) appState.today.correctAnswers++;
@@ -187,11 +189,8 @@ const Practice = (() => {
       appState.user.totalCorrect += wasCorrect ? 1 : 0;
       appState.user.xp += xp;
       App.setState(appState);
-      e.xpDisplay.textContent = session.xpEarned + ' XP';
-
     } catch (err) {
       console.warn('handleAnswer storage error (non-fatal):', err);
-      session.index++; // still advance
     }
   }
 
