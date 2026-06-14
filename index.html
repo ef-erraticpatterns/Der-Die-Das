@@ -53,11 +53,12 @@
       <button id="btn-dismiss-notif">✕</button>
     </div>
 
-    <!-- Preview word card (tap to start practice) -->
-    <div id="preview-card" class="preview-word-card">
-      <div class="preview-case-chip" id="preview-case">Nominativ · Nominative</div>
-      <div class="preview-noun" id="preview-noun">Welt</div>
-      <div class="preview-hint">Tippe zum Üben · Tap to practice ›</div>
+    <!-- Start Practice CTA -->
+    <div class="home-cta-wrap">
+      <button id="btn-start-practice" class="btn-cta">
+        Übung starten · Start Practice
+        <span class="cta-sub">Täglich 20 Wörter · 20 words daily</span>
+      </button>
     </div>
 
     <!-- Ring + chips side by side -->
@@ -113,9 +114,6 @@
         <div class="qc-sub">Grammar rules</div>
       </div>
     </div>
-
-    <!-- hidden start button still needed for JS -->
-    <button id="btn-start-practice" style="display:none"></button>
 
   </section>
 
@@ -465,6 +463,7 @@
 <!-- ── Scripts ── -->
 <script src="data/grammar-rules.js"></script>
 <script src="data/words-core.js"></script>
+<script src="data/translations.js"></script>
 <script src="data/words-professional.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/store.js"></script>

@@ -48,6 +48,9 @@ const App = (() => {
     // Detect error patterns in background
     Adaptive.detectErrorPatterns().then(p => { patternWeakness = p; });
 
+    // Ensure back button shows exit dialog instead of leaving the app
+    history.replaceState({ screen: 'home' }, '', location.href);
+
     // Handle URL shortcut ?screen=practice
     const params = new URLSearchParams(location.search);
     if (params.get('screen') === 'practice') {
@@ -108,7 +111,17 @@ const App = (() => {
 
   window.addEventListener('popstate', e => {
     const s = e.state && e.state.screen;
-    if (s) showScreen(s);
+    if (s) {
+      showScreen(s);
+    } else {
+      // No state = user pressed back past app entry — show exit dialog
+      history.pushState({ screen: 'home' }, '', '/');
+      showConfirm(
+        'App verlassen? · Exit app?',
+        'Möchtest du die App wirklich schließen? · Do you really want to close the app?',
+        () => history.go(-2)
+      );
+    }
   });
 
   /* ── Header ── */
@@ -123,9 +136,6 @@ const App = (() => {
   /* ── Dashboard ── */
   function initDashboard() {
     document.getElementById('btn-start-practice').addEventListener('click', () => startPractice());
-
-    const previewCard = document.getElementById('preview-card');
-    if (previewCard) previewCard.addEventListener('click', () => startPractice());
 
     document.getElementById('btn-enable-notif').addEventListener('click', async () => {
       const granted = await Notifications.requestPermission();
@@ -223,29 +233,6 @@ const App = (() => {
 
     // Update badge
     Notifications.updateBadge(Math.max(0, goal - done));
-
-    // Preview word card
-    refreshPreviewCard();
-  }
-
-  function refreshPreviewCard() {
-    const card = document.getElementById('preview-card');
-    const nounEl = document.getElementById('preview-noun');
-    const caseEl = document.getElementById('preview-case');
-    if (!card || !nounEl || !caseEl) return;
-    const words = window.GermanData && window.GermanData.core;
-    if (!words || words.length === 0) return;
-    const CASES = ['nominative','accusative','dative','genitive'];
-    const CASE_LABELS = {
-      nominative: 'Nominativ · Nominative',
-      accusative: 'Akkusativ · Accusative',
-      dative:     'Dativ · Dative',
-      genitive:   'Genitiv · Genitive'
-    };
-    const word = words[Math.floor(Math.random() * Math.min(words.length, 200))];
-    const cas  = CASES[Math.floor(Math.random() * CASES.length)];
-    nounEl.textContent = word.noun;
-    caseEl.textContent = CASE_LABELS[cas];
   }
 
   /* ── Practice ── */

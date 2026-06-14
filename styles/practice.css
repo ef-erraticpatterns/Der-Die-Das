@@ -125,17 +125,8 @@
   80%     { transform: translateX(6px); }
 }
 
-/* Case chip */
-.case-chip {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: var(--surface-2);
-  color: var(--text-muted);
-}
+/* Case chip — hidden per user request */
+.case-chip { display: none; }
 
 /* The noun */
 .question-noun {
