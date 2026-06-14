@@ -1,65 +1,45 @@
 /* ── Dashboard / Home Screen ── */
 
-/* Preview word card */
-.preview-word-card {
-  margin: 16px var(--gap) 0;
-  background: var(--surface);
-  border: 1.5px solid rgba(255,255,255,0.1);
-  border-radius: var(--radius-lg);
-  padding: 24px 20px 20px;
+/* CTA start button */
+.home-cta-wrap {
+  padding: 12px var(--gap) 0;
+}
+.btn-cta {
+  width: 100%;
+  padding: 16px var(--gap);
+  background: var(--accent);
+  color: #0d0d1a;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 800;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  transition: transform 0.15s, box-shadow 0.15s;
-  position: relative;
-  overflow: hidden;
+  gap: 3px;
+  box-shadow: 0 4px 20px rgba(0,245,160,0.35);
+  transition: transform 0.1s, box-shadow 0.1s;
+  letter-spacing: 0.01em;
 }
-.preview-word-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #3d9bff, #00f5a0, #ffd166, #ff4d7a);
-}
-.preview-word-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-.preview-case-chip {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+.btn-cta:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(0,245,160,0.2); }
+.btn-cta.done {
+  background: var(--surface-2);
   color: var(--text-muted);
-  background: rgba(255,255,255,0.06);
-  border-radius: 20px;
-  padding: 4px 14px;
+  box-shadow: none;
+  border: 1px solid var(--border);
 }
-.preview-noun {
-  font-size: 2.6rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-.preview-hint {
-  font-size: 0.75rem;
-  color: var(--accent);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
+.cta-sub { font-size: 0.75rem; font-weight: 500; opacity: 0.75; }
 
-/* Hero progress ring — compact, used inside home-middle-row */
+/* Hero progress ring — compact */
 .hero-ring {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 110px;
+  height: 110px;
   flex-shrink: 0;
 }
 .hero-ring svg {
   transform: rotate(-90deg);
-  width: 140px;
-  height: 140px;
+  width: 110px;
+  height: 110px;
 }
 .hero-ring .ring-bg {
   stroke: rgba(255,255,255,0.08);
@@ -80,22 +60,22 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
 }
 .ring-count {
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 800;
   line-height: 1;
   color: var(--text);
 }
 .ring-goal {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 .ring-label {
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--text-faint);
 }
 
@@ -103,54 +83,54 @@
 .home-middle-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px var(--gap);
+  gap: 12px;
+  padding: 10px var(--gap) 0;
 }
 .home-chips-stack {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .stat-chip {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 0.9rem;
+  padding: 7px 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
   font-weight: 700;
   border: 1px solid transparent;
 }
-.stat-chip .chip-icon { font-size: 1.1rem; }
-.stat-chip.streak { color: #ff9f43; border-color: rgba(255,159,67,0.35); background: rgba(255,159,67,0.12); }
-.stat-chip.xp     { color: var(--das); border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.1); }
-.stat-chip.level  { color: var(--accent); border-color: rgba(6,214,160,0.35); background: rgba(6,214,160,0.1); }
+.stat-chip .chip-icon { font-size: 1rem; }
+.stat-chip.streak   { color: #ff9f43; border-color: rgba(255,159,67,0.35); background: rgba(255,159,67,0.12); }
+.stat-chip.weekly   { color: var(--der); border-color: rgba(61,155,255,0.35); background: rgba(61,155,255,0.1); }
+.stat-chip.accuracy { color: var(--das); border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.1); }
 
 /* Quick action grid */
 .quick-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 0 var(--gap);
+  gap: 8px;
+  padding: 8px var(--gap) 0;
 }
 .quick-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px 14px;
+  padding: 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
-  min-height: 80px;
+  min-height: 68px;
   justify-content: center;
 }
 .quick-card:active { transform: scale(0.97); background: var(--surface-2); }
-.quick-card .qc-icon { font-size: 1.5rem; }
-.quick-card .qc-name { font-size: 0.85rem; font-weight: 700; }
-.quick-card .qc-sub { font-size: 0.72rem; color: var(--text-muted); }
+.quick-card .qc-icon { font-size: 1.3rem; }
+.quick-card .qc-name { font-size: 0.8rem; font-weight: 700; }
+.quick-card .qc-sub { font-size: 0.68rem; color: var(--text-muted); }
 
 /* Badge strip */
 .badge-strip-wrap {
@@ -214,37 +194,38 @@
 
 /* Today accuracy card */
 .today-card {
-  margin: 0 var(--gap);
+  margin: 8px var(--gap) 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: var(--gap);
+  padding: 10px var(--gap);
 }
 .today-card-title {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .today-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 4px;
 }
 .today-stat {
   text-align: center;
 }
 .today-stat .ts-val {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 800;
   line-height: 1;
 }
 .today-stat .ts-label {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   color: var(--text-muted);
-  margin-top: 4px;
+  margin-top: 3px;
+  line-height: 1.2;
 }
 .today-stat.correct .ts-val { color: var(--accent); }
 .today-stat.wrong .ts-val { color: var(--error); }

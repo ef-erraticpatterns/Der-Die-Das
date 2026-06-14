@@ -5,6 +5,7 @@ const Practice = (() => {
   let currentItem = null;
   let questionStartTime = 0;
   let answered = false;
+  let transitioning = false; // prevents double-tap on Continue
 
   const CASE_LABELS = {
     nominative: { de: 'Nominativ', en: 'Nominative (Subject)' },
@@ -56,6 +57,7 @@ const Practice = (() => {
       wordsDetail: []
     };
     answered = false;
+    transitioning = false;
 
     document.body.classList.add('practice-mode');
     e.completeScreen.classList.add('hidden');
@@ -79,12 +81,16 @@ const Practice = (() => {
 
   /* ── Show question ── */
   function showQuestion() {
+    if (transitioning) return;
+    transitioning = true;
+
     const e = els();
-    if (session.index >= session.queue.length) { endSession(); return; }
+    if (session.index >= session.queue.length) { transitioning = false; endSession(); return; }
 
     flipCard(() => {
       currentItem = session.queue[session.index];
       answered = false;
+      transitioning = false;
       questionStartTime = Date.now();
 
       const { word, cas } = currentItem;
@@ -106,7 +112,10 @@ const Practice = (() => {
 
       e.caseChip.textContent = `${label.de} · ${label.en}`;
       e.noun.textContent = word.noun;
-      if (e.qEn) e.qEn.textContent = word.en || '';
+      if (e.qEn) {
+        const translations = (window.GermanData && window.GermanData.en) || {};
+        e.qEn.textContent = word.en || translations[word.noun] || '';
+      }
       e.plural.textContent = word.plural ? `Pl: ${word.plural}` : '';
 
       updateProgress();
@@ -128,8 +137,9 @@ const Practice = (() => {
 
     const e = els();
     const { word, cas } = currentItem;
-    const caseData = word.cases[cas] || word.cases.nominative;
-    const correctArticle = caseData.article;
+    // Always compare against the base gender article (der/die/das)
+    // — declined forms (dem, den, des, der) don't match any button
+    const correctArticle = word.article;
     const responseMs = Date.now() - questionStartTime;
     const wasCorrect = chosenArticle === correctArticle;
 
@@ -186,7 +196,6 @@ const Practice = (() => {
   /* ── Post-answer content ── */
   function showPostAnswerContent(word, cas, correctArticle, wasCorrect) {
     const e = els();
-    const casLabel = CASE_LABELS[cas] || CASE_LABELS.nominative;
     const example = word.examples && word.examples.length > 0 ? word.examples[0] : null;
 
     if (wasCorrect) {
@@ -200,11 +209,11 @@ const Practice = (() => {
     } else {
       e.tipCard.classList.remove('hidden');
       e.tipRule.innerHTML = `
-        Im ${casLabel.de}: <span class="correct-answer ${correctArticle}">${correctArticle}</span> ${word.noun}
+        <span class="correct-answer ${correctArticle}">${correctArticle}</span> ${word.noun}
         ${example ? `<span style="display:block;margin-top:6px;font-weight:400;font-size:0.82rem;opacity:0.8">${example}</span>` : ''}
         ${word.tip ? `<span style="display:block;margin-top:4px;font-style:italic;font-size:0.78rem;color:var(--das);opacity:0.8">${word.tip}</span>` : ''}
       `;
-      e.tipEn.textContent = `In the ${casLabel.en}: "${correctArticle} ${word.noun}"`;
+      e.tipEn.textContent = `Correct: "${correctArticle} ${word.noun}"`;
     }
   }
 
