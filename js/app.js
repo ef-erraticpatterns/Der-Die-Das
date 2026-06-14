@@ -135,7 +135,10 @@ const App = (() => {
 
   /* ── Dashboard ── */
   function initDashboard() {
-    document.getElementById('btn-start-practice').addEventListener('click', () => startPractice());
+    const startBtn = document.getElementById('btn-start-practice');
+    if (startBtn) startBtn.addEventListener('click', () => startPractice());
+    const previewCard = document.getElementById('preview-card');
+    if (previewCard) previewCard.addEventListener('click', () => startPractice());
 
     document.getElementById('btn-enable-notif').addEventListener('click', async () => {
       const granted = await Notifications.requestPermission();
@@ -233,6 +236,25 @@ const App = (() => {
 
     // Update badge
     Notifications.updateBadge(Math.max(0, goal - done));
+
+    refreshPreviewCard();
+  }
+
+  function refreshPreviewCard() {
+    const gd = window.GermanData || {};
+    const pool = gd.wordsCore || [];
+    if (!pool.length) return;
+    const word = pool[Math.floor(Math.random() * pool.length)];
+    const translations = gd.en || {};
+    const articleEl = document.getElementById('preview-article');
+    const nounEl = document.getElementById('preview-noun');
+    const enEl = document.getElementById('preview-en');
+    if (articleEl) {
+      articleEl.textContent = word.article;
+      articleEl.className = 'preview-article ' + word.article;
+    }
+    if (nounEl) nounEl.textContent = word.noun;
+    if (enEl) enEl.textContent = word.en || translations[word.noun] || '';
   }
 
   /* ── Practice ── */
@@ -470,9 +492,13 @@ const App = (() => {
   /* ── Confirm dialog ── */
   function initConfirmDialog() {
     const dialog = document.getElementById('confirm-dialog');
-    document.getElementById('btn-confirm-cancel').addEventListener('click', () => dialog.classList.add('hidden'));
-    document.getElementById('btn-confirm-ok').addEventListener('click', () => {
+    const hideDialog = () => {
       dialog.classList.add('hidden');
+      document.body.style.overflow = '';
+    };
+    document.getElementById('btn-confirm-cancel').addEventListener('click', hideDialog);
+    document.getElementById('btn-confirm-ok').addEventListener('click', () => {
+      hideDialog();
       if (dialog._onConfirm) dialog._onConfirm();
     });
   }
@@ -483,6 +509,7 @@ const App = (() => {
     document.getElementById('confirm-text').textContent = text;
     dialog._onConfirm = onConfirm;
     dialog.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
   }
 
   /* ── Toast ── */
