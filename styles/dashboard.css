@@ -3,7 +3,7 @@
 /* Preview word card */
 .preview-word-card {
   margin: 16px var(--gap) 0;
-  background: #0f1117;
+  background: var(--surface);
   border: 1.5px solid rgba(255,255,255,0.1);
   border-radius: var(--radius-lg);
   padding: 24px 20px 20px;
@@ -22,7 +22,7 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #4a9eff, #06d6a0, #ffd166, #ff6b8a);
+  background: linear-gradient(90deg, #3d9bff, #00f5a0, #ffd166, #ff4d7a);
 }
 .preview-word-card:active { transform: scale(0.98); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
 .preview-case-chip {

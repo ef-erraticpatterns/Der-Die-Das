@@ -5,7 +5,6 @@ const Practice = (() => {
   let currentItem = null;
   let questionStartTime = 0;
   let answered = false;
-  let speedStreak = 0;
 
   const CASE_LABELS = {
     nominative: { de: 'Nominativ', en: 'Nominative (Subject)' },
@@ -18,9 +17,10 @@ const Practice = (() => {
     screen:         document.getElementById('screen-practice'),
     progressFill:   document.getElementById('practice-prog-fill'),
     progressText:   document.getElementById('practice-prog-text'),
-    xpDisplay:      document.getElementById('practice-xp'),
+    streakDisplay:  document.getElementById('practice-streak'),
     caseChip:       document.getElementById('q-case-chip'),
     noun:           document.getElementById('q-noun'),
+    qEn:            document.getElementById('q-en'),
     plural:         document.getElementById('q-plural'),
     sentence:       document.getElementById('q-sentence'),
     card:           document.getElementById('question-card'),
@@ -37,7 +37,7 @@ const Practice = (() => {
     completeSub:    document.getElementById('session-sub'),
     ssCorrect:      document.getElementById('ss-correct'),
     ssWrong:        document.getElementById('ss-wrong'),
-    ssXP:           document.getElementById('ss-xp'),
+    ssAccuracy:     document.getElementById('ss-accuracy'),
     confettiWrap:   document.getElementById('confetti-wrap')
   });
 
@@ -53,16 +53,14 @@ const Practice = (() => {
       index: 0,
       correct: 0,
       wrong: 0,
-      xpEarned: 0,
-      speedStreak: 0,
       wordsDetail: []
     };
-    speedStreak = 0;
     answered = false;
 
     document.body.classList.add('practice-mode');
     e.completeScreen.classList.add('hidden');
-    e.xpDisplay.textContent = '0 XP';
+    const streak = appState.user.currentStreak;
+    if (e.streakDisplay) e.streakDisplay.textContent = streak > 0 ? `🔥 ${streak}` : '—';
     showQuestion();
   }
 
@@ -73,7 +71,7 @@ const Practice = (() => {
     setTimeout(() => {
       callback();
       e.card.classList.remove('flip-out');
-      void e.card.offsetWidth; // force reflow so animation restarts
+      void e.card.offsetWidth;
       e.card.classList.add('flip-in');
       setTimeout(() => e.card.classList.remove('flip-in'), 350);
     }, 200);
@@ -96,7 +94,6 @@ const Practice = (() => {
       e.tipCard.classList.add('hidden');
       e.continueBtn.classList.remove('show');
 
-      // Sentence hidden before answer
       e.sentence.style.display = 'none';
       e.sentence.style.borderLeft = '';
       e.sentence.style.color = '';
@@ -109,6 +106,7 @@ const Practice = (() => {
 
       e.caseChip.textContent = `${label.de} · ${label.en}`;
       e.noun.textContent = word.noun;
+      if (e.qEn) e.qEn.textContent = word.en || '';
       e.plural.textContent = word.plural ? `Pl: ${word.plural}` : '';
 
       updateProgress();
@@ -121,7 +119,6 @@ const Practice = (() => {
     const done = session.index;
     e.progressFill.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
     e.progressText.textContent = `${done} / ${total}`;
-    e.xpDisplay.textContent = session.xpEarned + ' XP';
   }
 
   /* ── Handle answer ── */
@@ -135,7 +132,6 @@ const Practice = (() => {
     const correctArticle = caseData.article;
     const responseMs = Date.now() - questionStartTime;
     const wasCorrect = chosenArticle === correctArticle;
-    const xp = calcXPForAnswer(wasCorrect, responseMs);
 
     // Visual feedback on buttons
     const btnMap = { der: e.derBtn, die: e.dieBtn, das: e.dasBtn };
@@ -145,30 +141,25 @@ const Practice = (() => {
 
     if (wasCorrect) {
       e.card.classList.add('correct');
-      speedStreak++;
-      floatXP(e.card, xp);
     } else {
       e.card.classList.add('wrong');
-      speedStreak = 0;
     }
 
-    // Update session counts SYNCHRONOUSLY — must happen before continue is tapped
-    if (wasCorrect) { session.correct++; session.xpEarned += xp; }
-    else            { session.wrong++; }
-    session.speedStreak = Math.max(session.speedStreak, speedStreak);
+    // Update session counts synchronously before continue
+    if (wasCorrect) session.correct++;
+    else            session.wrong++;
     session.wordsDetail.push({ wordId: word.id, correct: wasCorrect, case: cas, timeTaken: responseMs / 1000 });
-    session.index++; // ← moved here so Continue always shows the right next card
+    session.index++;
 
     // Show sentence / tip after answer
     showPostAnswerContent(word, cas, correctArticle, wasCorrect);
 
-    // Show continue button — index already correct
+    // Show continue button
     const isLast = session.index >= session.queue.length;
     e.continueBtn.classList.add('show');
     e.continueBtn.textContent = isLast ? 'Fertig! / Done! 🎉' : 'Weiter / Continue ›';
-    e.xpDisplay.textContent = session.xpEarned + ' XP';
 
-    // Persist progress in background — any error is non-fatal, never blocks UI
+    // Persist progress in background — non-fatal
     try {
       const progress = await Store.getWordProgress(word.id);
       progress.errorsByCase = progress.errorsByCase || { nominative:0, accusative:0, dative:0, genitive:0 };
@@ -182,12 +173,10 @@ const Practice = (() => {
 
       const appState = App.getState();
       appState.today.wordsCompleted++;
-      appState.today.xpEarned += xp;
       if (wasCorrect) appState.today.correctAnswers++;
       else            appState.today.wrongAnswers++;
       appState.user.totalWordsAnswered++;
       appState.user.totalCorrect += wasCorrect ? 1 : 0;
-      appState.user.xp += xp;
       App.setState(appState);
     } catch (err) {
       console.warn('handleAnswer storage error (non-fatal):', err);
@@ -206,7 +195,7 @@ const Practice = (() => {
         e.sentence.style.display = '';
         e.sentence.style.borderLeft = '3px solid var(--accent)';
         e.sentence.style.color = 'var(--accent)';
-        e.sentence.style.background = 'rgba(6,214,160,0.08)';
+        e.sentence.style.background = 'rgba(0,245,160,0.08)';
       }
     } else {
       e.tipCard.classList.remove('hidden');
@@ -219,19 +208,6 @@ const Practice = (() => {
     }
   }
 
-  function calcXPForAnswer(wasCorrect, responseMs) {
-    return Gamification.calcXP(wasCorrect, responseMs, App.getState().user.currentStreak, true);
-  }
-
-  function floatXP(card, xp) {
-    if (xp <= 0) return;
-    const el = document.createElement('div');
-    el.className = 'xp-float';
-    el.textContent = '+' + xp + ' XP';
-    card.appendChild(el);
-    setTimeout(() => el.remove(), 900);
-  }
-
   /* ── End session ── */
   async function endSession() {
     const e = els();
@@ -242,8 +218,7 @@ const Practice = (() => {
         id: session.id, date: session.date,
         startedAt: session.startedAt, endedAt: session.endedAt,
         wordsAttempted: session.index, correct: session.correct,
-        wrong: session.wrong, xpEarned: session.xpEarned,
-        speedStreak: session.speedStreak
+        wrong: session.wrong
       });
     } catch (err) { console.warn('saveSession error', err); }
 
@@ -258,15 +233,13 @@ const Practice = (() => {
         perfect: appState.today.wrongAnswers === 0
       };
     }
-
-    const newBadges = Gamification.checkBadges(appState, session);
-    if (newBadges.length > 0) appState.badges = [...(appState.badges || []), ...newBadges];
     App.setState(appState);
 
-    const accuracy = session.index > 0 ? Math.round((session.correct / session.index) * 100) : 0;
+    const total = session.correct + session.wrong;
+    const accuracy = total > 0 ? Math.round((session.correct / total) * 100) : 0;
     e.ssCorrect.textContent = session.correct;
     e.ssWrong.textContent = session.wrong;
-    e.ssXP.textContent = '+' + session.xpEarned;
+    if (e.ssAccuracy) e.ssAccuracy.textContent = accuracy + '%';
 
     if (session.wrong === 0 && session.correct >= 10) {
       e.completeEmoji.textContent = '🌟';
@@ -281,17 +254,16 @@ const Practice = (() => {
     } else {
       e.completeEmoji.textContent = '👍';
       e.completeTitle.textContent = 'Gut gemacht! / Well done!';
-      e.completeSub.textContent = `${session.correct}/${session.index} richtig · ${accuracy}% accuracy`;
+      e.completeSub.textContent = `${session.correct}/${total} richtig · ${accuracy}% accuracy`;
     }
 
     e.completeScreen.classList.remove('hidden');
-    if (newBadges.length > 0) setTimeout(() => App.showBadgeUnlock(newBadges[0].id), 1500);
   }
 
   function spawnConfetti() {
     const e = els();
     if (!e.confettiWrap) return;
-    const colors = ['#06d6a0','#ffd166','#ff6b8a','#4a9eff'];
+    const colors = ['#00f5a0','#ffd166','#ff4d7a','#3d9bff'];
     for (let i = 0; i < 60; i++) {
       const p = document.createElement('div');
       p.className = 'confetti-piece';

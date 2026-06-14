@@ -10,7 +10,6 @@ const Store = (() => {
     return {
       version: 1,
       user: {
-        xp: 0, level: 0,
         totalWordsAnswered: 0, totalCorrect: 0,
         currentStreak: 0, longestStreak: 0,
         lastPracticeDate: null,
@@ -25,11 +24,9 @@ const Store = (() => {
         wordsCompleted: 0,
         correctAnswers: 0,
         wrongAnswers: 0,
-        xpEarned: 0,
         sessionStarted: false
       },
       streakCalendar: {},
-      badges: [],
       settings: {
         practiceMode: 'adaptive',
         caseDepth: 'all',
@@ -117,7 +114,6 @@ const Store = (() => {
       wordsCompleted: 0,
       correctAnswers: 0,
       wrongAnswers: 0,
-      xpEarned: 0,
       sessionStarted: false
     };
     state.sessionQueue = [];

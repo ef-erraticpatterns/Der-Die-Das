@@ -36,7 +36,6 @@ const App = (() => {
     initGrammarScreen();
     initSettingsModal();
     initConfirmDialog();
-    initBadgeOverlay();
 
     // Notifications
     Notifications.showBanner(state);
@@ -114,12 +113,10 @@ const App = (() => {
 
   /* ── Header ── */
   function updateHeader() {
-    const xpEl = document.querySelector('.header-xp');
     const streakEl = document.querySelector('.header-streak');
-    if (xpEl) xpEl.textContent = `${Utils.formatNumber(state.user.xp)} XP`;
     if (streakEl) {
       const s = state.user.currentStreak;
-      streakEl.textContent = s > 0 ? `🔥 ${s}` : '0';
+      streakEl.textContent = s > 0 ? `🔥 ${s}` : '—';
     }
   }
 
@@ -200,10 +197,15 @@ const App = (() => {
     // Stat chips
     const streakSpan = document.getElementById('chip-streak');
     if (streakSpan) streakSpan.textContent = `${state.user.currentStreak} ${state.user.currentStreak === 1 ? 'Tag' : 'Tage'}`;
-    const xpSpan = document.getElementById('chip-xp');
-    if (xpSpan) xpSpan.textContent = Utils.formatNumber(state.user.xp) + ' XP';
-    const levelSpan = document.getElementById('chip-level');
-    if (levelSpan) levelSpan.textContent = Utils.getLevel(state.user.xp).name;
+    const weeklySpan = document.getElementById('chip-weekly');
+    if (weeklySpan) weeklySpan.textContent = `${Utils.getWeeklyCount(state)}/7 Tage`;
+    const accuracySpan = document.getElementById('chip-accuracy');
+    if (accuracySpan) {
+      const u = state.user;
+      accuracySpan.textContent = u.totalWordsAnswered > 0
+        ? Utils.pct(u.totalCorrect, u.totalWordsAnswered) + '%'
+        : '—%';
+    }
 
     // Today stats
     const tc = document.getElementById('today-correct');
@@ -244,25 +246,6 @@ const App = (() => {
     const cas  = CASES[Math.floor(Math.random() * CASES.length)];
     nounEl.textContent = word.noun;
     caseEl.textContent = CASE_LABELS[cas];
-  }
-
-  function renderBadgeStrip() {
-    const strip = document.querySelector('.badge-strip');
-    if (!strip) return;
-    const earned = new Set((state.badges || []).map(b => b.id));
-    const allBadges = Gamification.BADGES;
-    // Show earned first, then unearned (greyed)
-    const toShow = [
-      ...allBadges.filter(b => earned.has(b.id)).slice(-4),
-      ...allBadges.filter(b => !earned.has(b.id)).slice(0, 4)
-    ].slice(0, 6);
-
-    strip.innerHTML = toShow.map(b => `
-      <div class="badge-chip">
-        <div class="badge-icon-wrap ${earned.has(b.id) ? 'earned' : ''}">${b.icon}</div>
-        <div class="badge-name">${b.name}</div>
-      </div>
-    `).join('');
   }
 
   /* ── Practice ── */
@@ -489,15 +472,8 @@ const App = (() => {
 
   function openSettings() {
     document.getElementById('settings-modal').classList.remove('hidden');
-    // Update level bar in settings
-    const level = Utils.getLevel(state.user.xp);
-    const prog = Utils.getLevelProgress(state.user.xp);
-    const lvlName = document.getElementById('level-name');
-    const lvlFill = document.getElementById('level-bar-fill');
-    const lvlXP = document.getElementById('level-xp-label');
-    if (lvlName) lvlName.textContent = `${level.name} · ${level.nameEn}`;
-    if (lvlFill) lvlFill.style.width = (prog * 100) + '%';
-    if (lvlXP) lvlXP.textContent = `${state.user.xp} XP`;
+    const streakVal = document.getElementById('settings-streak-val');
+    if (streakVal) streakVal.textContent = state.user.currentStreak;
   }
 
   function closeSettings() {
@@ -522,23 +498,6 @@ const App = (() => {
     dialog.classList.remove('hidden');
   }
 
-  /* ── Badge overlay ── */
-  function initBadgeOverlay() {
-    document.getElementById('btn-badge-close').addEventListener('click', () => {
-      document.getElementById('badge-overlay').classList.add('hidden');
-    });
-  }
-
-  function showBadgeUnlock(badgeId) {
-    const badge = Gamification.getBadgeDef(badgeId);
-    if (!badge) return;
-    const overlay = document.getElementById('badge-overlay');
-    document.getElementById('badge-unlock-icon').textContent = badge.icon;
-    document.getElementById('badge-unlock-title').textContent = `Abzeichen freigeschaltet! · Badge unlocked!`;
-    document.getElementById('badge-unlock-name').textContent = `${badge.name} · ${badge.nameEn}`;
-    overlay.classList.remove('hidden');
-  }
-
   /* ── Toast ── */
   let toastTimer = null;
   function toast(msg) {
@@ -552,7 +511,7 @@ const App = (() => {
 
   return {
     init, getState, setState, showScreen, refreshDashboard,
-    startPractice, startRulePractice, showConfirm, showBadgeUnlock, toast
+    startPractice, startRulePractice, showConfirm, toast
   };
 })();
 

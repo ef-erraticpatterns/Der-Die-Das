@@ -44,7 +44,7 @@
 }
 .practice-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #06d6a0cc);
+  background: linear-gradient(90deg, var(--accent), #00f5a0cc);
   border-radius: 3px;
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   width: 0%;
@@ -54,8 +54,8 @@
   color: var(--text-muted);
   text-align: right;
 }
-.practice-xp-display {
-  font-size: 0.8rem;
+.practice-streak-display {
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--das);
   background: var(--das-bg);
@@ -75,7 +75,7 @@
 }
 .question-card {
   width: min(90vw, 420px);
-  background: #0f1117;
+  background: var(--surface);
   border: 1.5px solid rgba(255,255,255,0.1);
   border-radius: var(--radius-lg);
   padding: 32px 24px;
@@ -106,16 +106,16 @@
   animation: flipIn 0.25s cubic-bezier(0.2,0,0.4,1) forwards;
 }
 .question-card.correct {
-  background: rgba(6,214,160,0.1);
-  border-color: rgba(6,214,160,0.4);
+  background: rgba(0,245,160,0.1);
+  border-color: rgba(0,245,160,0.4);
   animation: flashCorrect 0.5s ease;
 }
 .question-card.wrong {
   animation: shakeWrong 0.4s ease;
 }
 @keyframes flashCorrect {
-  0%   { background: rgba(6,214,160,0.3); }
-  100% { background: rgba(6,214,160,0.1); }
+  0%   { background: rgba(0,245,160,0.3); }
+  100% { background: rgba(0,245,160,0.1); }
 }
 @keyframes shakeWrong {
   0%,100% { transform: translateX(0); }
@@ -144,6 +144,15 @@
   letter-spacing: -0.02em;
   text-align: center;
   line-height: 1.1;
+}
+/* English translation below noun */
+.question-en {
+  font-size: 1rem;
+  color: #ffd166;
+  font-style: italic;
+  text-align: center;
+  opacity: 0.9;
+  min-height: 1.2em;
 }
 .question-plural {
   font-size: 0.85rem;
@@ -290,7 +299,7 @@
 #btn-continue {
   margin: 8px var(--gap) calc(var(--safe-bottom) + 8px);
   min-height: 62px;
-  background: linear-gradient(135deg, #06d6a0, #04b889);
+  background: linear-gradient(135deg, #00f5a0, #00d488);
   color: #0d1b2a;
   border-radius: var(--radius);
   font-size: 1.1rem;

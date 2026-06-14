@@ -1,25 +1,25 @@
 /* ── CSS Custom Properties ── */
 :root {
   /* Article colors */
-  --der: #4a9eff;
-  --der-bg: rgba(74, 158, 255, 0.15);
-  --die: #ff6b8a;
-  --die-bg: rgba(255, 107, 138, 0.15);
+  --der: #3d9bff;
+  --der-bg: rgba(61, 155, 255, 0.15);
+  --die: #ff4d7a;
+  --die-bg: rgba(255, 77, 122, 0.15);
   --das: #ffd166;
   --das-bg: rgba(255, 209, 102, 0.15);
 
   /* UI colors */
-  --bg: #08090d;
-  --surface: #0f1117;
-  --surface-2: #181c27;
-  --surface-3: #1e2330;
+  --bg: #0d0d1a;
+  --surface: #12122a;
+  --surface-2: #1a1a2e;
+  --surface-3: #202040;
   --border: rgba(255,255,255,0.12);
-  --accent: #06d6a0;
-  --accent-bg: rgba(6, 214, 160, 0.15);
-  --error: #ef476f;
-  --error-bg: rgba(239, 71, 111, 0.15);
+  --accent: #00f5a0;
+  --accent-bg: rgba(0, 245, 160, 0.15);
+  --error: #ff3860;
+  --error-bg: rgba(255, 56, 96, 0.15);
   --warning: #ffd166;
-  --success: #06d6a0;
+  --success: #00f5a0;
 
   /* Text */
   --text: #eaeaea;

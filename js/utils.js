@@ -97,35 +97,21 @@ const Utils = (() => {
 
   function getHour() { return new Date().getHours(); }
 
-  const LEVELS = [
-    { min:0,    max:99,   name:'Anfänger',      nameEn:'Beginner' },
-    { min:100,  max:299,  name:'Lerner',         nameEn:'Learner' },
-    { min:300,  max:599,  name:'Fortgeschritten',nameEn:'Intermediate' },
-    { min:600,  max:999,  name:'Geübt',          nameEn:'Practiced' },
-    { min:1000, max:1999, name:'Erfahren',        nameEn:'Experienced' },
-    { min:2000, max:3999, name:'Kompetent',       nameEn:'Competent' },
-    { min:4000, max:7999, name:'Meister',         nameEn:'Master' },
-    { min:8000, max:Infinity, name:'Experte',     nameEn:'Expert' }
-  ];
-
-  function getLevel(xp) {
-    return LEVELS.find(l => xp >= l.min && xp <= l.max) || LEVELS[LEVELS.length-1];
-  }
-
-  function getLevelProgress(xp) {
-    const lvl = getLevel(xp);
-    if (lvl.max === Infinity) return 1;
-    const range = lvl.max - lvl.min + 1;
-    return (xp - lvl.min) / range;
-  }
-
-  function getLevelNext(xp) {
-    const lvl = getLevel(xp);
-    if (lvl.max === Infinity) return xp;
-    return lvl.max + 1;
+  function getWeeklyCount(state) {
+    const today = todayISO();
+    let count = 0;
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(today, -i);
+      if (i === 0) {
+        if (state.today && state.today.wordsCompleted > 0) count++;
+      } else {
+        if (state.streakCalendar && state.streakCalendar[date]) count++;
+      }
+    }
+    return count;
   }
 
   return { todayISO, addDays, daysBetween, uid, debounce, clamp, pct, shuffle,
            expandWord, articleForCase, pluralArticleForCase, formatNumber, getHour,
-           getLevel, getLevelProgress, getLevelNext, LEVELS };
+           getWeeklyCount };
 })();
