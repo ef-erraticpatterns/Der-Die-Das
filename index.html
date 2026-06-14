@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#1a1a2e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Artikel Trainer" />
+  <meta name="apple-mobile-web-app-title" content="DerDieDas" />
   <meta name="description" content="Lerne der, die, das in allen deutschen Fällen. Learn German articles in all four cases." />
-  <title>Artikel Trainer</title>
+  <title>DerDieDas</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.png" />
   <!-- Styles -->
@@ -28,12 +28,11 @@
   <!-- ── Header ── -->
   <header id="app-header">
     <div>
-      <div class="logo">Artikel <span>Trainer</span></div>
+      <div class="logo">Der<span>DieDas</span></div>
       <div class="header-sub">der · die · das</div>
     </div>
     <div id="header-right">
       <span class="header-streak">🔥 0</span>
-      <span class="header-xp">0 XP</span>
       <button id="btn-settings" aria-label="Einstellungen / Settings">⚙</button>
     </div>
   </header>
@@ -77,8 +76,8 @@
       </div>
       <div class="home-chips-stack">
         <div class="stat-chip streak"><span class="chip-icon">🔥</span><span id="chip-streak">0 Tage</span></div>
-        <div class="stat-chip level"><span class="chip-icon">🎓</span><span id="chip-level">Anfänger</span></div>
-        <div class="stat-chip xp"><span class="chip-icon">⭐</span><span id="chip-xp">0 XP</span></div>
+        <div class="stat-chip weekly"><span class="chip-icon">📅</span><span id="chip-weekly">0/7 Tage</span></div>
+        <div class="stat-chip accuracy"><span class="chip-icon">🎯</span><span id="chip-accuracy">—%</span></div>
       </div>
     </div>
 
@@ -134,7 +133,7 @@
         </div>
         <div class="practice-progress-text" id="practice-prog-text">0 / 20</div>
       </div>
-      <div class="practice-xp-display" id="practice-xp">0 XP</div>
+      <div class="practice-streak-display" id="practice-streak">🔥 0</div>
     </div>
 
     <!-- Question card -->
@@ -142,6 +141,7 @@
       <div class="question-card" id="question-card">
         <div class="case-chip" id="q-case-chip">Nominativ · Nominative</div>
         <div class="question-noun" id="q-noun">Haus</div>
+        <div class="question-en" id="q-en">house</div>
         <div class="question-plural" id="q-plural">Pl: Häuser</div>
         <div class="question-sentence" id="q-sentence" style="display:none"></div>
 
@@ -181,7 +181,7 @@
       <div class="session-stats">
         <div class="session-stat correct"><div class="ss-val" id="ss-correct">0</div><div class="ss-label">Richtig · Right</div></div>
         <div class="session-stat wrong"><div class="ss-val" id="ss-wrong">0</div><div class="ss-label">Falsch · Wrong</div></div>
-        <div class="session-stat xp"><div class="ss-val" id="ss-xp">+0</div><div class="ss-label">XP verdient</div></div>
+        <div class="session-stat accuracy"><div class="ss-val" id="ss-accuracy">0%</div><div class="ss-label">Genauigkeit · Accuracy</div></div>
       </div>
       <button class="btn-done" id="btn-done">Zurück zur Startseite · Back to Home</button>
     </div>
@@ -260,18 +260,6 @@
   <section id="screen-stats" class="screen">
     <div class="stats-content">
 
-      <!-- Level progress -->
-      <div class="level-bar-wrap">
-        <div class="level-bar-header">
-          <span class="level-name" id="level-name">Anfänger · Beginner</span>
-          <span class="level-next" id="level-next">100 XP bis nächstes Level</span>
-        </div>
-        <div class="level-bar-track">
-          <div class="level-bar-fill" id="level-bar-fill" style="width:0%"></div>
-        </div>
-        <div class="level-xp-label" id="level-xp-label">0 / 100 XP</div>
-      </div>
-
       <!-- All-time stats -->
       <div class="alltime-grid">
         <div class="alltime-card streak">
@@ -282,9 +270,9 @@
           <div class="alltime-val" id="stat-longest">0</div>
           <div class="alltime-label">Längster Streak<br>Longest streak</div>
         </div>
-        <div class="alltime-card xp">
-          <div class="alltime-val" id="stat-xp">0</div>
-          <div class="alltime-label">Gesamt XP<br>Total XP</div>
+        <div class="alltime-card weekly">
+          <div class="alltime-val" id="stat-weekly">0/7</div>
+          <div class="alltime-label">Diese Woche<br>This week</div>
         </div>
         <div class="alltime-card words">
           <div class="alltime-val" id="stat-words">0</div>
@@ -416,14 +404,6 @@
 
 <!-- ── Global overlays ── -->
 
-<!-- Badge unlock overlay -->
-<div id="badge-overlay" class="hidden">
-  <div class="badge-unlock-icon" id="badge-unlock-icon">🎯</div>
-  <div class="badge-unlock-title" id="badge-unlock-title">Abzeichen freigeschaltet!</div>
-  <div class="badge-unlock-name" id="badge-unlock-name"></div>
-  <button class="badge-unlock-close" id="btn-badge-close">Weiter · Continue</button>
-</div>
-
 <!-- Settings modal -->
 <div id="settings-modal" class="modal-overlay hidden">
   <div class="modal-sheet">
@@ -431,13 +411,10 @@
     <div class="modal-title">Einstellungen · Settings</div>
     <div class="modal-subtitle">Passe die App an · Customize the app</div>
 
-    <div class="level-bar-wrap" style="margin-bottom:16px">
-      <div class="level-bar-header">
-        <span class="level-name" id="level-name">Anfänger</span>
-        <span class="level-next" id="level-next"></span>
-      </div>
-      <div class="level-bar-track"><div class="level-bar-fill" id="level-bar-fill" style="width:0%"></div></div>
-      <div class="level-xp-label" id="level-xp-label"></div>
+    <div class="settings-streak-row" style="margin-bottom:16px;text-align:center;padding:12px 0">
+      <div style="font-size:2rem;line-height:1">🔥</div>
+      <div id="settings-streak-val" style="font-size:1.75rem;font-weight:700;margin-top:4px">0</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">Aktueller Streak · Current Streak</div>
     </div>
 
     <div class="settings-row">

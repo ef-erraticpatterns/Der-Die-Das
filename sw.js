@@ -70,7 +70,7 @@ self.addEventListener('fetch', e => {
 });
 
 self.addEventListener('push', e => {
-  let data = { title: 'Artikel Trainer', body: 'Zeit zum Üben! / Time to practice!', icon: BASE + 'icons/icon-192.png' };
+  let data = { title: 'DerDieDas', body: 'Zeit zum Üben! / Time to practice!', icon: BASE + 'icons/icon-192.png' };
   if (e.data) { try { data = { ...data, ...e.data.json() }; } catch (_) {} }
   e.waitUntil(
     self.registration.showNotification(data.title, {
@@ -108,7 +108,7 @@ async function checkAndNotify() {
     : hour >= 19
     ? 'Noch nicht fertig! / Not done yet!'
     : 'Zeit für deine tägliche Übung! / Time for your daily practice!';
-  await self.registration.showNotification('Artikel Trainer', { body, icon, badge: BASE + 'icons/icon-192.png', tag: 'daily-reminder', renotify: true });
+  await self.registration.showNotification('DerDieDas', { body, icon, badge: BASE + 'icons/icon-192.png', tag: 'daily-reminder', renotify: true });
 }
 
 self.addEventListener('message', e => {
@@ -124,7 +124,7 @@ self.addEventListener('message', e => {
             : r.type === 'evening'
             ? `Noch nicht fertig! ${r.remaining} Wörter. / Not done! ${r.remaining} words left.`
             : `Zeit zum Üben! ${r.remaining} Wörter heute. / Practice time! ${r.remaining} words today.`;
-          self.registration.showNotification('Artikel Trainer', { body, icon, tag: 'daily-reminder', renotify: true });
+          self.registration.showNotification('DerDieDas', { body, icon, tag: 'daily-reminder', renotify: true });
         }, delay);
       }
     }

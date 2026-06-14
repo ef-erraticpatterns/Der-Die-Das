@@ -14,24 +14,11 @@ const Stats = (() => {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     set('stat-streak',   u.currentStreak);
     set('stat-longest',  u.longestStreak);
-    set('stat-xp',       Utils.formatNumber(u.xp));
+    set('stat-weekly',   `${Utils.getWeeklyCount(state)}/7`);
     set('stat-words',    Utils.formatNumber(u.totalWordsAnswered));
     const acc = u.totalWordsAnswered > 0 ? Utils.pct(u.totalCorrect, u.totalWordsAnswered) : 0;
     set('stat-accuracy', acc + '%');
-    set('stat-mastered', '—'); // updated after DB load
-
-    // Level progress bar
-    const level = Utils.getLevel(u.xp);
-    const prog = Utils.getLevelProgress(u.xp);
-    const levelName = document.getElementById('level-name');
-    const levelFill = document.getElementById('level-bar-fill');
-    const levelXP = document.getElementById('level-xp-label');
-    const levelNext = document.getElementById('level-next');
-    if (levelName) levelName.textContent = `${level.name} · ${level.nameEn}`;
-    if (levelFill) levelFill.style.width = (prog * 100) + '%';
-    const nextXP = Utils.getLevelNext(u.xp);
-    if (levelXP) levelXP.textContent = `${u.xp.toLocaleString()} / ${nextXP === u.xp ? '∞' : nextXP.toLocaleString()} XP`;
-    if (levelNext) levelNext.textContent = nextXP > u.xp ? `${nextXP - u.xp} XP bis nächstes Level` : 'Max level!';
+    set('stat-mastered', '—');
   }
 
   async function renderCalendar(state) {
