@@ -29,6 +29,59 @@
 }
 .cta-sub { font-size: 0.75rem; font-weight: 500; opacity: 0.75; }
 
+/* Preview word card */
+.preview-card {
+  margin: 12px var(--gap) 0;
+  background: var(--surface);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  height: clamp(190px, 40dvh, 300px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.5);
+}
+.preview-card:active { transform: scale(0.985); }
+.preview-article {
+  font-size: 1.2rem;
+  font-weight: 800;
+  padding: 3px 14px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+.preview-article.der { background: var(--der-bg); color: var(--der); }
+.preview-article.die { background: var(--die-bg); color: var(--die); }
+.preview-article.das { background: var(--das-bg); color: var(--das); }
+.preview-noun {
+  font-size: clamp(2.2rem, 9vw, 3.4rem);
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  padding: 0 var(--gap);
+}
+.preview-en {
+  font-size: 1.05rem;
+  color: #ffd166;
+  font-style: italic;
+  opacity: 0.85;
+  text-align: center;
+}
+.preview-tap-hint {
+  position: absolute;
+  bottom: 14px;
+  font-size: 0.68rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 /* Hero progress ring — compact */
 .hero-ring {
   position: relative;

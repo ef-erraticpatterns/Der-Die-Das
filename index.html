@@ -53,13 +53,14 @@
       <button id="btn-dismiss-notif">✕</button>
     </div>
 
-    <!-- Start Practice CTA -->
-    <div class="home-cta-wrap">
-      <button id="btn-start-practice" class="btn-cta">
-        Übung starten · Start Practice
-        <span class="cta-sub">Täglich 20 Wörter · 20 words daily</span>
-      </button>
+    <!-- Preview word card — tap to start practice -->
+    <div id="preview-card" class="preview-card">
+      <div class="preview-article das" id="preview-article">das</div>
+      <div class="preview-noun" id="preview-noun">Haus</div>
+      <div class="preview-en" id="preview-en">house</div>
+      <div class="preview-tap-hint">Tippen zum Üben · Tap to practice</div>
     </div>
+    <button id="btn-start-practice" style="display:none" aria-hidden="true"></button>
 
     <!-- Ring + chips side by side -->
     <div class="home-middle-row">
