@@ -543,3 +543,15 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+// Save state whenever the app is backgrounded or the tab is closed
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    const s = App.getState();
+    if (s) Store.save(s);
+  }
+});
+window.addEventListener('pagehide', () => {
+  const s = App.getState();
+  if (s) Store.save(s);
+});

@@ -161,6 +161,16 @@ const Practice = (() => {
     session.wordsDetail.push({ wordId: word.id, correct: wasCorrect, case: cas, timeTaken: responseMs / 1000 });
     session.index++;
 
+    // Update and save app-level stats immediately (synchronous localStorage write)
+    // Must happen BEFORE any async work so closing the app can't lose the count
+    const appState = App.getState();
+    appState.today.wordsCompleted++;
+    if (wasCorrect) appState.today.correctAnswers++;
+    else            appState.today.wrongAnswers++;
+    appState.user.totalWordsAnswered++;
+    appState.user.totalCorrect += wasCorrect ? 1 : 0;
+    App.setState(appState);
+
     // Show sentence / tip after answer
     showPostAnswerContent(word, cas, correctArticle, wasCorrect);
 
@@ -169,7 +179,7 @@ const Practice = (() => {
     e.continueBtn.classList.add('show');
     e.continueBtn.textContent = isLast ? 'Fertig! / Done! 🎉' : 'Weiter / Continue ›';
 
-    // Persist progress in background — non-fatal
+    // Persist per-word spaced-repetition data in background — non-fatal
     try {
       const progress = await Store.getWordProgress(word.id);
       progress.errorsByCase = progress.errorsByCase || { nominative:0, accusative:0, dative:0, genitive:0 };
@@ -180,16 +190,8 @@ const Practice = (() => {
       }
       Adaptive.updateSM2(progress, wasCorrect, responseMs);
       await Store.setWordProgress(progress);
-
-      const appState = App.getState();
-      appState.today.wordsCompleted++;
-      if (wasCorrect) appState.today.correctAnswers++;
-      else            appState.today.wrongAnswers++;
-      appState.user.totalWordsAnswered++;
-      appState.user.totalCorrect += wasCorrect ? 1 : 0;
-      App.setState(appState);
     } catch (err) {
-      console.warn('handleAnswer storage error (non-fatal):', err);
+      console.warn('handleAnswer IndexedDB error (non-fatal):', err);
     }
   }
 
