@@ -95,8 +95,8 @@
   height: 110px;
 }
 .hero-ring .ring-bg {
-  stroke: rgba(255,255,255,0.08);
-  stroke-width: 10;
+  stroke: rgba(0,245,160,0.2);
+  stroke-width: 3;
   fill: none;
 }
 .hero-ring .ring-fill {
@@ -132,33 +132,58 @@
   color: var(--text-faint);
 }
 
-/* Side-by-side row: ring left, chips right */
+/* Side-by-side row: ring left, mini rings right */
 .home-middle-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px var(--gap) 0;
 }
-.home-chips-stack {
+
+/* Three mini progress rings */
+.home-mini-rings {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  justify-content: space-around;
+  align-items: center;
 }
-.stat-chip {
+.mini-ring-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+}
+.mini-ring-svg {
+  width: 62px;
+  height: 62px;
+  transform: rotate(-90deg);
+  display: block;
+}
+.mini-ring-bg  { fill: none; stroke-width: 3; }
+.mini-ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.mini-ring-day-bg    { stroke: rgba(0,245,160,0.2); }
+.mini-ring-day-fill  { stroke: var(--accent); }
+.mini-ring-week-bg   { stroke: rgba(61,155,255,0.2); }
+.mini-ring-week-fill { stroke: var(--der); }
+.mini-ring-month-bg  { stroke: rgba(255,209,102,0.2); }
+.mini-ring-month-fill { stroke: var(--das); }
+.mini-ring-center {
+  position: absolute;
+  top: 0; left: 0;
+  width: 62px; height: 62px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border-radius: 12px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  border: 1px solid transparent;
+  justify-content: center;
 }
-.stat-chip .chip-icon { font-size: 1rem; }
-.stat-chip.streak   { color: #ff9f43; border-color: rgba(255,159,67,0.35); background: rgba(255,159,67,0.12); }
-.stat-chip.weekly   { color: var(--der); border-color: rgba(61,155,255,0.35); background: rgba(61,155,255,0.1); }
-.stat-chip.accuracy { color: var(--das); border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.1); }
+.mini-ring-val  { font-size: 1rem; font-weight: 800; line-height: 1; }
+.mini-ring-label {
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
 
 /* Quick action grid */
 .quick-grid {
@@ -181,9 +206,24 @@
   justify-content: center;
 }
 .quick-card:active { transform: scale(0.97); background: var(--surface-2); }
-.quick-card .qc-icon { font-size: 1.3rem; }
 .quick-card .qc-name { font-size: 0.8rem; font-weight: 700; }
 .quick-card .qc-sub { font-size: 0.68rem; color: var(--text-muted); }
+.qc-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.qc-circle-stats {
+  background: rgba(255,159,67,0.15);
+  border: 2px solid rgba(255,159,67,0.55);
+  box-shadow: 0 0 10px rgba(255,159,67,0.25);
+}
+.qc-circle-rules {
+  background: rgba(255,77,122,0.15);
+  border: 2px solid rgba(255,77,122,0.55);
+  box-shadow: 0 0 10px rgba(255,77,122,0.25);
+}
 
 /* Badge strip */
 .badge-strip-wrap {

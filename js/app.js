@@ -176,14 +176,12 @@ const App = (() => {
     const goal = state.user.dailyGoal;
     const pct = goal > 0 ? done / goal : 0;
 
-    // Progress ring
+    // Progress ring — always neon green, stroke color set in CSS
     const ring = document.querySelector('.hero-ring svg .ring-fill');
     if (ring) {
-      const r = 58; // radius (should match SVG)
-      const circ = 2 * Math.PI * r;
+      const circ = 2 * Math.PI * 58;
       ring.style.strokeDasharray = circ;
       ring.style.strokeDashoffset = circ * (1 - Math.min(pct, 1));
-      ring.style.stroke = pct >= 1 ? 'var(--accent)' : pct >= 0.5 ? 'var(--das)' : 'var(--die)';
     }
 
     // Ring center
@@ -207,18 +205,33 @@ const App = (() => {
       }
     }
 
-    // Stat chips
-    const streakSpan = document.getElementById('chip-streak');
-    if (streakSpan) streakSpan.textContent = `${state.user.currentStreak} ${state.user.currentStreak === 1 ? 'Tag' : 'Tage'}`;
-    const weeklySpan = document.getElementById('chip-weekly');
-    if (weeklySpan) weeklySpan.textContent = `${Utils.getWeeklyCount(state)}/7 Tage`;
-    const accuracySpan = document.getElementById('chip-accuracy');
-    if (accuracySpan) {
-      const u = state.user;
-      accuracySpan.textContent = u.totalWordsAnswered > 0
-        ? Utils.pct(u.totalCorrect, u.totalWordsAnswered) + '%'
-        : '—%';
+    // Mini progress rings (TAG / WOCHE / MONAT)
+    const miniCirc = 2 * Math.PI * 18; // r=18 in viewBox 44×44 → circ≈113.1
+    const dayFill = document.getElementById('mini-day-fill');
+    const dayVal  = document.getElementById('mini-daily-val');
+    if (dayFill) {
+      dayFill.style.strokeDasharray  = miniCirc;
+      dayFill.style.strokeDashoffset = miniCirc * (1 - Math.min(pct, 1));
     }
+    if (dayVal) dayVal.textContent = done;
+
+    const weekCount = Utils.getWeeklyCount(state);
+    const weekFill = document.getElementById('mini-week-fill');
+    const weekVal  = document.getElementById('mini-weekly-val');
+    if (weekFill) {
+      weekFill.style.strokeDasharray  = miniCirc;
+      weekFill.style.strokeDashoffset = miniCirc * (1 - Math.min(weekCount / 7, 1));
+    }
+    if (weekVal) weekVal.textContent = weekCount;
+
+    const monthCount = Utils.getMonthlyCount(state);
+    const monthFill = document.getElementById('mini-month-fill');
+    const monthVal  = document.getElementById('mini-monthly-val');
+    if (monthFill) {
+      monthFill.style.strokeDasharray  = miniCirc;
+      monthFill.style.strokeDashoffset = miniCirc * (1 - Math.min(monthCount / 30, 1));
+    }
+    if (monthVal) monthVal.textContent = monthCount;
 
     // Today stats
     const tc = document.getElementById('today-correct');

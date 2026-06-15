@@ -99,8 +99,10 @@ const Utils = (() => {
 
   function getWeeklyCount(state) {
     const today = todayISO();
+    const dayOfWeek = new Date(today + 'T12:00:00').getDay(); // 0=Sun, 1=Mon..6=Sat
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     let count = 0;
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i <= daysFromMonday; i++) {
       const date = addDays(today, -i);
       if (i === 0) {
         if (state.today && state.today.wordsCompleted > 0) count++;
@@ -111,7 +113,23 @@ const Utils = (() => {
     return count;
   }
 
+  function getMonthlyCount(state) {
+    const today = todayISO();
+    const yearMonth = today.substring(0, 7);
+    const todayDate = parseInt(today.substring(8, 10));
+    let count = 0;
+    for (let d = 1; d <= todayDate; d++) {
+      const dateStr = yearMonth + '-' + String(d).padStart(2, '0');
+      if (dateStr === today) {
+        if (state.today && state.today.wordsCompleted > 0) count++;
+      } else {
+        if (state.streakCalendar && state.streakCalendar[dateStr]) count++;
+      }
+    }
+    return count;
+  }
+
   return { todayISO, addDays, daysBetween, uid, debounce, clamp, pct, shuffle,
            expandWord, articleForCase, pluralArticleForCase, formatNumber, getHour,
-           getWeeklyCount };
+           getWeeklyCount, getMonthlyCount };
 })();
