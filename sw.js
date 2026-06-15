@@ -1,4 +1,4 @@
-const CACHE_NAME = 'artikel-trainer-v3';
+const CACHE_NAME = 'artikel-trainer-v4';
 const BASE = new URL('./', self.location).href;
 
 const ASSET_PATHS = [
@@ -23,6 +23,7 @@ const ASSET_PATHS = [
   'js/notifications.js',
   'js/app.js',
   'data/grammar-rules.js',
+  'data/words-common.js',
   'data/words-core.js',
   'data/translations.js',
   'data/words-professional.js',
