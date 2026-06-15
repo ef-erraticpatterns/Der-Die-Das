@@ -76,10 +76,34 @@
           <span class="ring-label">heute · today</span>
         </div>
       </div>
-      <div class="home-chips-stack">
-        <div class="stat-chip streak"><span class="chip-icon">🔥</span><span id="chip-streak">0 Tage</span></div>
-        <div class="stat-chip weekly"><span class="chip-icon">📅</span><span id="chip-weekly">0/7 Tage</span></div>
-        <div class="stat-chip accuracy"><span class="chip-icon">🎯</span><span id="chip-accuracy">—%</span></div>
+      <div class="home-mini-rings">
+        <!-- TAG (daily) -->
+        <div class="mini-ring-wrap">
+          <svg class="mini-ring-svg" viewBox="0 0 44 44">
+            <circle class="mini-ring-bg mini-ring-day-bg" cx="22" cy="22" r="18"/>
+            <circle class="mini-ring-fill mini-ring-day-fill" id="mini-day-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"/>
+          </svg>
+          <div class="mini-ring-center"><span class="mini-ring-val" id="mini-daily-val">0</span></div>
+          <div class="mini-ring-label">TAG</div>
+        </div>
+        <!-- WOCHE (weekly, Mon–Sun) -->
+        <div class="mini-ring-wrap">
+          <svg class="mini-ring-svg" viewBox="0 0 44 44">
+            <circle class="mini-ring-bg mini-ring-week-bg" cx="22" cy="22" r="18"/>
+            <circle class="mini-ring-fill mini-ring-week-fill" id="mini-week-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"/>
+          </svg>
+          <div class="mini-ring-center"><span class="mini-ring-val" id="mini-weekly-val">0</span></div>
+          <div class="mini-ring-label">WOCHE</div>
+        </div>
+        <!-- MONAT (monthly, 30 days) -->
+        <div class="mini-ring-wrap">
+          <svg class="mini-ring-svg" viewBox="0 0 44 44">
+            <circle class="mini-ring-bg mini-ring-month-bg" cx="22" cy="22" r="18"/>
+            <circle class="mini-ring-fill mini-ring-month-fill" id="mini-month-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"/>
+          </svg>
+          <div class="mini-ring-center"><span class="mini-ring-val" id="mini-monthly-val">0</span></div>
+          <div class="mini-ring-label">MONAT</div>
+        </div>
       </div>
     </div>
 
@@ -104,13 +128,13 @@
 
     <!-- Quick action grid (2 cards) -->
     <div class="quick-grid">
-      <div class="quick-card" data-screen="dict">
-        <div class="qc-icon">📖</div>
-        <div class="qc-name">Wörterbuch</div>
-        <div class="qc-sub">Dictionary · 1000+ words</div>
+      <div class="quick-card" data-screen="stats">
+        <div class="qc-circle qc-circle-stats"></div>
+        <div class="qc-name">Statistiken</div>
+        <div class="qc-sub">Stats · Progress</div>
       </div>
       <div class="quick-card" data-screen="grammar">
-        <div class="qc-icon">📐</div>
+        <div class="qc-circle qc-circle-rules"></div>
         <div class="qc-name">Artikel-Regeln</div>
         <div class="qc-sub">Grammar rules</div>
       </div>
