@@ -67,14 +67,14 @@ const App = (() => {
 
   async function loadWords() {
     // Words are loaded via <script> tags assigning to window.GermanData
-    // Merge all word sources
+    // Merge all word sources (common first so frequency ordering works)
     const gd = window.GermanData || {};
-    const core = gd.wordsCore || [];
-    const pro  = gd.wordsProfessional || [];
-    const ext  = gd.wordsExtended || [];
-    window._allWords = [...core, ...pro, ...ext];
-    // Init dictionary with core + pro for now
-    Dictionary.init([...core, ...pro]);
+    const common = gd.wordsCommon || [];
+    const core   = gd.wordsCore || [];
+    const pro    = gd.wordsProfessional || [];
+    const ext    = gd.wordsExtended || [];
+    window._allWords = [...common, ...core, ...pro, ...ext];
+    Dictionary.init([...common, ...core, ...pro]);
   }
 
   /* ── Navigation ── */
@@ -255,7 +255,7 @@ const App = (() => {
 
   function refreshPreviewCard() {
     const gd = window.GermanData || {};
-    const pool = gd.wordsCore || [];
+    const pool = [...(gd.wordsCommon || []), ...(gd.wordsCore || [])];
     if (!pool.length) return;
     const word = pool[Math.floor(Math.random() * pool.length)];
     const translations = gd.en || {};
@@ -291,7 +291,8 @@ const App = (() => {
 
   async function startPractice(ruleId = null) {
     const gd = window.GermanData || {};
-    let pool = [...(gd.wordsCore || [])];
+    // Common words first (highest frequency) so adaptive queue sees them before core
+    let pool = [...(gd.wordsCommon || []), ...(gd.wordsCore || [])];
 
     if (state.settings.includeProfessional) {
       const proWords = gd.wordsProfessional || [];

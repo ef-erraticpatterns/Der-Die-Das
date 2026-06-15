@@ -50,12 +50,20 @@ const Adaptive = (() => {
 
     const now = new Date();
 
+    // Deduplicate by noun (keep highest-frequency occurrence)
+    const seenNouns = new Set();
+    const dedupedWords = allWords.filter(w => {
+      if (seenNouns.has(w.noun)) return false;
+      seenNouns.add(w.noun);
+      return true;
+    });
+
     // Categorise words
     const dueForReview = [];
     const highErrorRate = [];
     const neverSeen = [];
 
-    for (const w of allWords) {
+    for (const w of dedupedWords) {
       const p = progById[w.id] || Store.defaultWordProgress(w.id);
       const overdue = p.nextReviewAt ? new Date(p.nextReviewAt) <= now : true;
 
@@ -92,7 +100,7 @@ const Adaptive = (() => {
     // Bucket 3: pattern weakness words (20%)
     if (patternWeakness) {
       const { weakestCase, weakestArticle } = patternWeakness;
-      const patternWords = allWords.filter(w => {
+      const patternWords = dedupedWords.filter(w => {
         if (used.has(w.id)) return false;
         const expanded = Utils.expandWord(w);
         if (weakestCase && expanded.cases[weakestCase]) return true;
@@ -102,15 +110,22 @@ const Adaptive = (() => {
       addWords(Utils.shuffle(patternWords), Math.ceil(count * 0.2));
     }
 
-    // Bucket 4: new words (fill remaining)
+    // Bucket 4: new words — sorted by frequency desc, difficulty asc (easiest/most common first)
     const remaining = count - queue.length;
     if (remaining > 0) {
-      addWords(Utils.shuffle(neverSeen).slice(0, remaining * 3), remaining);
+      const sortedNew = neverSeen.slice().sort((a, b) => {
+        const freqDiff = (b.frequency || 0) - (a.frequency || 0);
+        if (freqDiff !== 0) return freqDiff;
+        return (a.difficulty || 1) - (b.difficulty || 1);
+      });
+      addWords(sortedNew, remaining);
     }
 
-    // Pad with random if still short
+    // Pad with frequency-sorted words if still short
     if (queue.length < count) {
-      const others = Utils.shuffle(allWords.filter(w => !used.has(w.id)));
+      const others = dedupedWords
+        .filter(w => !used.has(w.id))
+        .sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
       addWords(others, count - queue.length);
     }
 
