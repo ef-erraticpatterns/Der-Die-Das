@@ -185,6 +185,70 @@
   color: var(--text-muted);
 }
 
+/* Case drill cards */
+.case-drill-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px var(--gap) 0;
+}
+.case-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 9px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: transform 0.1s, background 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.case-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+}
+.case-card[data-case="nominative"]::before { background: var(--der); }
+.case-card[data-case="accusative"]::before { background: var(--das); }
+.case-card[data-case="dative"]::before     { background: var(--die); }
+.case-card:active { transform: scale(0.96); background: var(--surface-2); }
+.case-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.case-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+.tag-nom { background: rgba(61,155,255,0.15);  color: var(--der); }
+.tag-acc { background: rgba(255,209,102,0.15); color: var(--das); }
+.tag-dat { background: rgba(255,77,122,0.15);  color: var(--die); }
+.case-errs {
+  font-size: 0.58rem;
+  color: var(--text-faint);
+  line-height: 1;
+}
+.case-errs.has-errors { color: var(--error); font-weight: 700; }
+.case-card-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.case-card-sub {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
 /* Quick action grid */
 .quick-grid {
   display: grid;

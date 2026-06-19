@@ -45,8 +45,8 @@ const App = (() => {
       Notifications.scheduleReminders(state);
     }
 
-    // Detect error patterns in background
-    Adaptive.detectErrorPatterns().then(p => { patternWeakness = p; });
+    // Detect error patterns in background, then refresh case error counts
+    Adaptive.detectErrorPatterns().then(p => { patternWeakness = p; updateCaseErrorCounts(); });
 
     // Ensure back button shows exit dialog instead of leaving the app
     history.replaceState({ screen: 'home' }, '', location.href);
@@ -166,6 +166,13 @@ const App = (() => {
         if (screen) showScreen(screen);
       });
     });
+
+    document.querySelectorAll('.case-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const cas = card.dataset.case;
+        if (cas) startCasePractice(cas);
+      });
+    });
   }
 
   function refreshDashboard() {
@@ -270,6 +277,22 @@ const App = (() => {
     if (enEl) enEl.textContent = word.en || translations[word.noun] || '';
   }
 
+  function updateCaseErrorCounts() {
+    if (!patternWeakness || !patternWeakness.caseTotals) return;
+    ['nominative', 'accusative', 'dative'].forEach(cas => {
+      const el = document.getElementById(`case-errs-${cas}`);
+      if (!el) return;
+      const count = patternWeakness.caseTotals[cas] || 0;
+      if (count > 0) {
+        el.textContent = `${count} ✗`;
+        el.classList.add('has-errors');
+      } else {
+        el.textContent = '';
+        el.classList.remove('has-errors');
+      }
+    });
+  }
+
   /* ── Practice ── */
   function initPracticeScreen() {
     document.getElementById('btn-exit-practice').addEventListener('click', () => {
@@ -326,6 +349,18 @@ const App = (() => {
     }
 
     const queue = await Adaptive.buildSessionQueue(pool, state.user.dailyGoal, patternWeakness);
+    showScreen('practice');
+    Practice.startSession(queue, state);
+  }
+
+  async function startCasePractice(cas) {
+    const gd = window.GermanData || {};
+    const pool = [...(gd.wordsCommon || []), ...(gd.wordsCore || [])];
+    if (pool.length === 0) { toast('Keine Wörter verfügbar · No words available'); return; }
+
+    const baseQueue = await Adaptive.buildSessionQueue(pool, state.user.dailyGoal, patternWeakness);
+    // Force every card to the chosen case
+    const queue = baseQueue.map(item => ({ ...item, cas }));
     showScreen('practice');
     Practice.startSession(queue, state);
   }
